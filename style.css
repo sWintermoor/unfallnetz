@@ -1,147 +1,72 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* General styles */
 body {
     font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 #top-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 80px; /* Doubled the height */
-    background: #333;
-    color: white;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 0 20px 0 0;
-    z-index: 1000;
-    gap: 20px;
-}
-
-.title-right {
-    margin-left: auto; /* Pushes the title to the right */
-    padding-right: 20px; /* Adds some space from the right edge */
+    background-color: #333;
+    color: white;
+    padding: 0px;
 }
 
 .button-group {
     display: flex;
-    height: 100%;
+    gap: 0px;
 }
 
 .nav-button {
-    height: 100%;
-    padding: 0 15px;
-    background: #444;
+    background-color: #555;
     color: white;
     border: none;
-    border-radius: 0;
+    padding: 10px 15px;
     cursor: pointer;
-    position: relative;
-    margin-left: -1px; /* Remove gap between buttons */
+    margin: 0px;
 }
 
 .nav-button:hover {
-    background: #555;
-    z-index: 1;
+    background-color: #777;
 }
 
-.nav-button:first-child {
-    margin-left: 0;
+.title-right {
+    margin: 0;
+}
+
+#map-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 50px);
+}
+
+#map {
+    width: 100%;
+    height: 100%;
 }
 
 #sidebar {
     position: fixed;
     right: -300px;
-    top: 80px;
-    bottom: 0;
+    top: 0;
     width: 300px;
-    background: white;
-    box-shadow: -2px 0 5px rgba(0,0,0,0.2);
-    transition: right 0.3s;
-    z-index: 999;
-    padding: 20px;
-    overflow-y: auto;
+    height: 100%;
+    background-color: #f4f4f4;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease;
+    z-index: 1000;
 }
 
 #sidebar.active {
     right: 0;
 }
 
-#map-container {
-    position: fixed;
-    top: 80px;
-    left: 0;
-    right: 0;
-    bottom: 0;
+#event-content {
+    padding: 20px;
 }
 
-#map {
-    width: 100%;
-    height: 100%;
-    background: #fff;
-}
-
-.close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    cursor: pointer;
-    font-size: 1.2em;
-}
-
-#sidebar-toggle {
-    position: fixed;
-    bottom: 20px; /* Move to the bottom */
-    right: 20px; /* Keep it on the right */
-    width: 40px;
-    height: 40px;
-    background: #2196F3;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 998;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    transition: transform 0.2s;
-}
-
-#sidebar-toggle:hover {
-    transform: scale(1.1);
-}
-
-#sidebar-toggle::after {
-    content: '☰';
-    color: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-/* Add touch-friendly scrollbar for sidebar */
-#sidebar::-webkit-scrollbar {
-    width: 8px;
-}
-
-#sidebar::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-/* Circular map marker */
-.map-marker {
-    width: 20px;
-    height: 20px;
-    background-color: #007bff;
-    border-radius: 50%;
-    border: 2px solid white;
-    cursor: pointer;
-}
-
-/* Latest Events Sidebar */
 #latest-events-sidebar {
     position: fixed;
     right: -300px;
@@ -160,4 +85,33 @@ body {
 
 #latest-events-content {
     padding: 20px;
+}
+
+/* Circular map marker */
+.map-marker {
+    width: 20px;
+    height: 20px;
+    background-color: #007bff;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+}
+
+/* Latest Events toggle button */
+#latest-events-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+}
+
+#latest-events-toggle:hover {
+    background-color: #0056b3;
 }
