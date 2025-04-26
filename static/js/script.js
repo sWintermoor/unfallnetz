@@ -191,3 +191,115 @@ function flyToDistrict() {
         console.error('Coordinates not found for:', value);
     }
 }
+
+
+// Try to get user's GPS location
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLng = position.coords.longitude;
+            const userLat = position.coords.latitude;
+            map.setCenter([userLng, userLat]); // Setze Center auf User-Position
+        },
+        (error) => {
+            console.error('Error getting location:', error);
+            // Option: Hier könnte man auf Hamburg zurücksetzen, wenn GPS fehlschlägt
+            map.setCenter([9.993682, 53.551086]);
+        }
+    );
+} else {
+    console.error('Geolocation not supported.');
+    // Falls Browser kein Geolocation unterstützt, Standardwert nehmen
+    map.setCenter([9.993682, 53.551086]);
+}
+
+function updateRiskLevel(level, info) {
+    const banner = document.getElementById('risk-level-banner');
+
+    let color = 'green'; // Default
+    let title = 'Gering'; // Default
+
+    switch (level.toLowerCase()) {
+        case 'niedrig':
+        case 'gering':
+            color = 'green';
+            title = 'Gering';
+            break;
+        case 'mittel':
+            color = 'orange';
+            title = 'Mittel';
+            break;
+        case 'hoch':
+            color = 'red';
+            title = 'Hoch';
+            break;
+        default:
+            color = 'gray';
+            title = 'Unbekannt';
+    }
+
+    // Update Style und Text
+    banner.style.backgroundColor = color;
+    banner.innerHTML = `Risikoniveau: ${title}<br><small>${info}</small>`;
+}
+
+
+function evaluateRiskLevelFromPosition(lng, lat) {
+    // Beispiel: Hamburg Innenstadt grob
+    if (lat > 53.54 && lat < 53.56 && lng > 9.98 && lng < 10.02) {
+        return { level: 'hoch', info: 'Zentrum - viele Menschen und Events' };
+    }
+    // Beispiel: Hafengebiet
+    else if (lat > 53.53 && lat < 53.54 && lng > 9.95 && lng < 10.00) {
+        return { level: 'mittel', info: 'Hafengebiet - industriell' };
+    }
+    // Sonst: wenig los
+    else {
+        return { level: 'gering', info: 'Ruhiges Gebiet' };
+    }
+}
+
+navigator.geolocation.getCurrentPosition(
+    (position) => {
+        const userLng = position.coords.longitude;
+        const userLat = position.coords.latitude;
+        map.setCenter([userLng, userLat]);
+
+        // Jetzt Risiko bewerten
+        const risk = evaluateRiskLevelFromPosition(userLng, userLat);
+        updateRiskLevel(risk.level, risk.info);
+    },
+    (error) => {
+        console.error('Error getting location:', error);
+        // Default fallback
+        map.setCenter([9.993682, 53.551086]);
+        updateRiskLevel('unbekannt', 'Keine Standortdaten verfügbar');
+    }
+);
+
+
+function updateRiskAtCenter() {
+    const center = map.getCenter();
+    const centerLng = center.lng;
+    const centerLat = center.lat;
+
+    const risk = evaluateRiskLevelFromPosition(centerLng, centerLat);
+    updateRiskLevel(risk.level, risk.info);
+}
+
+// Aktualisieren bei Verschieben
+map.on('move', updateRiskAtCenter);
+
+// Aktualisieren bei Zoomen
+map.on('zoom', updateRiskAtCenter);
+
+let liveEvents = []; // Alle aktiven Events
+
+// Beispiel Event Struktur:
+function handleNewEvent(e) {
+    liveEvents.push({
+        type: e.type,             // z.B. 'Unfall', 'Polizei', 'Festival'
+        coordinates: [e.lng, e.lat],
+        description: e.description
+    });
+}
