@@ -1,9 +1,14 @@
-from flask import Flask, render_template, jsonify
-from flask_pymongo import PyMongo
 from datetime import datetime
+from flask import Flask, render_template
+from flask_pymongo import PyMongo
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 
+# Create a SocketIO instance
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Definiere eine Route (eine URL, die eine Funktion aufruft)
 # Verbindung zu deiner MongoDB
 app.config["MONGO_URI"] = "mongodb://localhost:27017/unfallnetz"
 mongo = PyMongo(app)
@@ -13,6 +18,21 @@ mongo = PyMongo(app)
 def home():
     return render_template("index.html")
 
+def new_entry():
+    # Falls der Agent neue Einträge in die Datenbank einfügt, wird diese Funktion ausgeführt.
+    return
+
+def send_event(eventType, eventDate, eventLocation, eventLat, eventLng, eventDescription):
+    socketio.emit('EventCreated', {
+        'type': eventType,
+        'date': eventDate,
+        'location': eventLocation,
+        'lat': eventLat,
+        'lng': eventLng,
+        'description': eventDescription
+})
+
+# Starte die Anwendung
 # API: Letztes Update holen
 @app.route('/api/last-update')
 def last_update():
@@ -33,4 +53,4 @@ def last_update():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
