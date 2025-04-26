@@ -3,17 +3,38 @@ import json
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+# Create a new client and connect to the server
+client = MongoClient(uri, server_api=ServerApi('1'))
+
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
+
+
+
 def main():
     # URL der API
     url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
 
     try:
         # MongoDB-Verbindung (lokal)
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        client = MongoClient("mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.abcd.mongodb.net/?retryWrites=true&w=majority")
+
         # Verbindungs-Check
         client.admin.command('ping')
-        db = client["verkehrsunfaelle"]        # Datenbankname
-        collection = db["unfaelle"]             # Collectionname
+        
+        # database und collection:
+        db = client["Unfall"]                 
+        collection = db["verkehrsmeldungen"]
 
         # Daten von der API holen
         response = requests.get(url)
@@ -41,4 +62,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
