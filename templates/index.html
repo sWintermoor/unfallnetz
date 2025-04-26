@@ -4,20 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hamburg Event Map</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+
+    <!-- CSS laden -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet" />
+
+    <!-- JavaScript-Bibliotheken -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
+
 <body>
+
+    <!-- Top-Bar -->
     <div id="top-bar">
         <div class="button-group">
             <button class="nav-button"><h2>Filters</h2></button>
             <button class="nav-button"><h2>Legend</h2></button>
             <button class="nav-button" id="theme-toggle" onclick="toggleTheme()">Switch to Dark Mode</button>
         </div>
+
+        <!-- Timestamp Anzeige -->
+        <div id="timestamp-display" style="margin-left: 20px; font-size: 14px;">
+            Letztes Update: -
+        </div>
+
         <h1 class="title-right">Hamburg Event Map</h1>
     </div>
+
+    <!-- Sidebar für Event-Details -->
     <div id="sidebar">
         <div class="close-btn" onclick="toggleSidebar()">✕</div>
         <h2>Event Details</h2>
@@ -28,10 +43,14 @@
             <p>Description: [PLACEHOLDER]</p>
         </div>
     </div>
+
+    <!-- Hauptbereich für die Map -->
     <div id="map-container">
         <div id="map"></div>
         <div id="sidebar-toggle" onclick="toggleSidebar()"></div>
     </div>
+
+    <!-- Sidebar für neueste Events -->
     <div id="latest-events-sidebar">
         <div class="close-btn" onclick="toggleLatestEventsSidebar()">✕</div>
         <h2>Latest Events</h2>
@@ -39,8 +58,12 @@
             <p>No events yet.</p>
         </div>
     </div>
-    <!-- Button to toggle the Latest Events sidebar -->
+
+    <!-- Button zum Öffnen der Latest Events Sidebar -->
     <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
+
+    <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
 </body>
 </html>
