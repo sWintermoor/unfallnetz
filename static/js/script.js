@@ -50,6 +50,7 @@ class MapEvent {
         // Sidebar aufklappen
         toggleSidebar();
     }
+} // <-- Properly close the MapEvent class
 
 // Initialize the map
 mapboxgl.accessToken = 'pk.eyJ1IjoiYXJzZW5paS1iZWxvdXNvdjA2IiwiYSI6ImNtOXh6YmR3MjFiZWsya3IwbXgyZ3U4eGYifQ.S6pKbiPWU2SlqWpoBrQh_Q';
