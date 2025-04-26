@@ -1,74 +1,12 @@
-// Sidebar toggle functions
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('active');
-}
-
-function toggleLatestEventsSidebar() {
-    const latestEventsSidebar = document.getElementById('latest-events-sidebar');
-    latestEventsSidebar.classList.toggle('active');
-}
-
-// MapEvent class
-class MapEvent {
-    constructor(title, date, location, description, coordinates) {
-        this.title = title;
-        this.date = date;
-        this.location = location;
-        this.description = description;
-        this.coordinates = coordinates;
-    }
-
-    addToMap(map) {
-        // Create a custom circular marker
-        const markerElement = document.createElement('div');
-        markerElement.className = 'map-marker';
-
-        const marker = new mapboxgl.Marker(markerElement)
-            .setLngLat(this.coordinates)
-            .addTo(map);
-
-        // Add click event to the marker
-        markerElement.addEventListener('click', () => {
-            this.showDetails();
-        });
-    }
-
-    showDetails() {
-        // Fill the sidebar with event details
-        document.getElementById('event-content').innerHTML = `
-            <p>Event Title: ${this.title}</p>
-            <p>Date: ${this.date}</p>
-            <p>Location: ${this.location}</p>
-            <p>Description: ${this.description}</p>
-        `;
-        // Open the sidebar
-        toggleSidebar();
-    }
-}
-
-// Initialize the map
+// Set the Mapbox Access Token
 mapboxgl.accessToken = 'pk.eyJ1IjoiM25heWNpIiwiYSI6ImNtOXhkY2g4MjB4OWUycHM2MTVvbGtyZ2IifQ.WqFxG56wGUk61umdzIM1aQ';
-let currentStyleIndex = 0; // Index to track the current style
 
-// List of cool Mapbox styles
-const mapStyles = [
-    { name: 'Standard', url: 'mapbox://styles/mapbox/streets-v11' },
-    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
-    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
-    { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
-    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
-    { name: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
-    { name: 'Navigation Day', url: 'mapbox://styles/mapbox/navigation-day-v1' },
-    { name: 'Navigation Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
-];
-
-// Set the initial map style
+// Initialize the map with basemap.de Web Vektor
 const map = new mapboxgl.Map({
-    container: 'map',
-    style: mapStyles[currentStyleIndex].url,
-    center: [9.993682, 53.551086],
-    zoom: 12
+    container: 'map', // ID of the map container
+    style: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json', // basemap.de Web Vektor (Farbe)
+    center: [9.993682, 53.551086], // Longitude, Latitude (Hamburg center)
+    zoom: 11 // Initial zoom level
 });
 
 // Add navigation controls
@@ -151,17 +89,6 @@ function toggleFiltersMenu() {
 function toggleLegendMenu() {
     const legendMenu = document.getElementById('legend-menu');
     legendMenu.classList.toggle('active');
-}
-
-// Theme toggle function
-function toggleTheme() {
-    currentStyleIndex = (currentStyleIndex + 1) % mapStyles.length;
-    const nextStyle = mapStyles[currentStyleIndex];
-    map.setStyle(nextStyle.url);
-
-    const themeToggleButton = document.getElementById('theme-toggle');
-    const nextStyleName = mapStyles[(currentStyleIndex + 1) % mapStyles.length].name;
-    themeToggleButton.textContent = `Switch to ${nextStyleName}`;
 }
 
 // Apply filters
