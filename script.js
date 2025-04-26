@@ -48,7 +48,7 @@ class MapEvent {
 }
 
 // Initialize the map
-mapboxgl.accessToken = 'accesstoken';
+mapboxgl.accessToken = 'pk.eyJ1IjoiM25heWNpIiwiYSI6ImNtOXhkY2g4MjB4OWUycHM2MTVvbGtyZ2IifQ.WqFxG56wGUk61umdzIM1aQ';
 let currentStyleIndex = 0; // Index to track the current style
 
 // List of cool Mapbox styles
@@ -139,4 +139,61 @@ function toggleTheme() {
     const themeToggleButton = document.getElementById('theme-toggle');
     const nextStyleName = mapStyles[(currentStyleIndex + 1) % mapStyles.length].name;
     themeToggleButton.textContent = `Switch to ${nextStyleName}`;
+}
+
+// Toggle Filters Menu
+function toggleFiltersMenu() {
+    const filtersMenu = document.getElementById('filters-menu');
+    filtersMenu.classList.toggle('active');
+}
+
+// Toggle Legend Menu
+function toggleLegendMenu() {
+    const legendMenu = document.getElementById('legend-menu');
+    legendMenu.classList.toggle('active');
+}
+
+// Theme toggle function
+function toggleTheme() {
+    currentStyleIndex = (currentStyleIndex + 1) % mapStyles.length;
+    const nextStyle = mapStyles[currentStyleIndex];
+    map.setStyle(nextStyle.url);
+
+    const themeToggleButton = document.getElementById('theme-toggle');
+    const nextStyleName = mapStyles[(currentStyleIndex + 1) % mapStyles.length].name;
+    themeToggleButton.textContent = `Switch to ${nextStyleName}`;
+}
+
+// Apply filters
+function applyFilters() {
+    const form = document.getElementById('filter-form');
+    const formData = new FormData(form);
+    const selectedTypes = formData.getAll('type');
+
+    if (!map || typeof map.getStyle !== 'function') {
+        console.error('Map is not initialized or invalid.');
+        return;
+    }
+
+    if (!map.isStyleLoaded()) {
+        console.error('Map style is not fully loaded.');
+        return;
+    }
+
+    try {
+        const layers = map.getStyle().layers;
+
+        layers.forEach((layer) => {
+            if (layer.type === 'symbol') {
+                const eventType = layer.metadata?.type;
+                if (!selectedTypes.includes(eventType)) {
+                    map.setLayoutProperty(layer.id, 'visibility', 'none');
+                } else {
+                    map.setLayoutProperty(layer.id, 'visibility', 'visible');
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error applying filters:', error);
+    }
 }
