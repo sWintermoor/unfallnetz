@@ -123,6 +123,13 @@ function addLatestEvent(title, date, location, description) {
     }
 }
 
+// Add ScaleControl to the map
+const scale = new mapboxgl.ScaleControl({
+    maxWidth: 100, // Maximale Breite des Maßstabs
+    unit: 'metric' // Einheit: metrisch (Kilometer/Meter)
+});
+map.addControl(scale, 'bottom-left'); // Positioniere den Maßstab unten links
+
 // Example: Add some events to the Latest Events sidebar
 addLatestEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.');
 addLatestEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.');
