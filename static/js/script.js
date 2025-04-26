@@ -1,17 +1,31 @@
-// Laravel Echo Frontend Integration
+// static/js/script.js
 
-// Sidebar toggle functions
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('active');
-}
+// Set the Mapbox Access Token
+mapboxgl.accessToken = 'pk.eyJ1IjoiM25heWNpIiwiYSI6ImNtOXhkY2g4MjB4OWUycHM2MTVvbGtyZ2IifQ.WqFxG56wGUk61umdzIM1aQ';
 
-function toggleLatestEventsSidebar() {
-    const latestEventsSidebar = document.getElementById('latest-events-sidebar');
-    latestEventsSidebar.classList.toggle('active');
-}
+// Alle verfügbaren Styles, einschließlich des Hamburg Custom Maps
+const themeStyles = [
+    { name: 'Default', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json' },
+    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
+    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
+    { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
+    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
+    { name: 'Sat. Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
+    { name: 'Navigation', url: 'mapbox://styles/mapbox/navigation-day-v1' },
+    { name: 'Nav. Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
+];
+let currentThemeIndex = 0; // Zeigt, welcher themeStyles-Eintrag als nächstes kommt
 
-// MapEvent class
+// Karte initialisieren mit dem Hamburg Custom Map Style
+const map = new mapboxgl.Map({
+    container: 'map',
+    style: themeStyles[currentThemeIndex].url, // Start mit dem ersten Style (Hamburg Custom Map)
+    center: [9.990682, 53.564086],
+    zoom: 10.5
+});
+map.addControl(new mapboxgl.NavigationControl());
+
+// MapEvent-Klasse für Marker
 class MapEvent {
     constructor(title, date, location, description, coordinates) {
         this.title = title;
@@ -19,151 +33,96 @@ class MapEvent {
         this.location = location;
         this.description = description;
         this.coordinates = coordinates;
+        this.marker = null;
     }
-
     addToMap(map) {
-        // Create a custom circular marker
-        const markerElement = document.createElement('div');
-        markerElement.className = 'map-marker';
-
-        const marker = new mapboxgl.Marker(markerElement)
+        const el = document.createElement('div');
+        el.className = 'map-marker';
+        this.marker = new mapboxgl.Marker(el)
             .setLngLat(this.coordinates)
             .addTo(map);
 
-        // Add click event to the marker
-        markerElement.addEventListener('click', () => {
-            this.showDetails();
+        // Add click event to show details in the sidebar
+        el.addEventListener('click', () => {
+            showEventDetails(this);
         });
     }
+}
 
-    showDetails() {
-        // Dynamisch die Event-Daten in die Sidebar einfügen
-        const content = `
-            <h3>${this.title}</h3>
-            <p><strong>Datum:</strong> ${this.date}</p>
-            <p><strong>Ort:</strong> ${this.location}</p>
-            <p><strong>Beschreibung:</strong> ${this.description}</p>
-        `;
-    
-        document.getElementById('event-content').innerHTML = content;
-    
-        // Sidebar aufklappen
-        toggleSidebar();
-    }
-} // <-- Properly close the MapEvent class
-
-// Initialize the map
-mapboxgl.accessToken = 'pk.eyJ1IjoiYXJzZW5paS1iZWxvdXNvdjA2IiwiYSI6ImNtOXh6YmR3MjFiZWsya3IwbXgyZ3U4eGYifQ.S6pKbiPWU2SlqWpoBrQh_Q';
-let currentStyleIndex = 0; // Index to track the current style
-
-// List of cool Mapbox styles
-const mapStyles = [
-    { name: 'Standard', url: 'mapbox://styles/mapbox/streets-v11' },
-    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
-    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
-    { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
-    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
-    { name: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
-    { name: 'Navigation Day', url: 'mapbox://styles/mapbox/navigation-day-v1' },
-    { name: 'Navigation Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
-];
-
-// Set the initial map style
-const map = new mapboxgl.Map({
-    container: 'map',
-    style: mapStyles[currentStyleIndex].url,
-    center: [9.993682, 53.551086],
-    zoom: 12
-});
-
-// Add navigation controls
-map.addControl(new mapboxgl.NavigationControl());
-
-// Create example events
-const event1 = new MapEvent(
-    'Music Festival',
-    '2023-10-15',
-    'Hamburg Central Park',
-    'A great music festival with live bands.',
-    [9.993682, 53.551086]
-);
-
-const event2 = new MapEvent(
-    'Art Exhibition',
-    '2023-11-01',
-    'Hamburg Art Gallery',
-    'An exhibition showcasing local artists.',
-    [9.982682, 53.561086]
-);
-
-// Add events to the map
+// Beispiel-Events
+const event1 = new MapEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.', [9.993682, 53.551086]);
 event1.addToMap(map);
+const event2 = new MapEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.', [9.9510, 53.5530]);
 event2.addToMap(map);
 
-// Add events to the "Latest Events" sidebar
-const latestEventsContent = document.getElementById('latest-events-content');
-latestEventsContent.innerHTML = `
-    <p>1. Music Festival - 2023-10-15</p>
-    <p>2. Art Exhibition - 2023-11-01</p>
-`;
-
-// Swipe functionality for "Latest Events" sidebar
-let startX = 0;
-let isDragging = false;
-
-document.getElementById('latest-events-sidebar').addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
-});
-
-document.getElementById('latest-events-sidebar').addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    const currentX = e.touches[0].clientX;
-    if (startX - currentX > 50) { // Swipe left to close
-        toggleLatestEventsSidebar();
-        isDragging = false;
-    }
-});
-
-document.addEventListener('touchend', () => {
-    isDragging = false;
-});
-
-// Initialize socket connection
-const socket = io('http://localhost:5500');
-
-// Listen for events on the WebSocket channel
-socket.on('EventCreated', function(e){
-    var type = e.type; // Typ
-    var date = e.date; // Datum
-    var location = e.location; // Ort
-    var latitude = e.lat; // Breitengrad
-    var longitude = e.lng; // Längengrad
-    var description = e.description; // Beschreibung
-
-    var event = new MapEvent(
-        type,
-        date,
-        location,
-        description,
-        [longitude, latitude]
-    );
-
-    event.addToMap(map); // Füge das Event zur Karte hinzu
-})
-// Theme toggle function
-function toggleTheme() {
-    // Increment the style index and loop back to the start if necessary
-    currentStyleIndex = (currentStyleIndex + 1) % mapStyles.length;
-
-    // Get the next style
-    const nextStyle = mapStyles[currentStyleIndex];
-
-    // Update the map style
-    map.setStyle(nextStyle.url);
-
-    // Update the button text to show the next style name
-    const themeToggleButton = document.getElementById('theme-toggle');
-    const nextStyleName = mapStyles[(currentStyleIndex + 1) % mapStyles.length].name;
-    themeToggleButton.textContent = `Switch to ${nextStyleName}`;
+// Show event details in the sidebar
+function showEventDetails(event) {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('event-content');
+    content.innerHTML = `
+        <h2>${event.title}</h2>
+        <p><strong>Date:</strong> ${event.date}</p>
+        <p><strong>Location:</strong> ${event.location}</p>
+        <p>${event.description}</p>
+    `;
+    sidebar.classList.add('active');
 }
+
+// Theme-Toggle
+function toggleTheme() {
+    // Setze den nächsten Mapbox-Style
+    currentThemeIndex = (currentThemeIndex + 1) % themeStyles.length;
+    map.setStyle(themeStyles[currentThemeIndex].url);
+
+    // Button-Text auf den übernächsten Style setzen
+    const btn = document.getElementById('theme-toggle');
+    const nextName = themeStyles[(currentThemeIndex + 1) % themeStyles.length].name;
+    btn.innerHTML = `<h3>${nextName}</h3>`;
+}
+
+// Filter- und Legend-Toggle
+function toggleFiltersMenu() {
+    document.getElementById('filters-menu').classList.toggle('active');
+}
+function toggleLegendMenu() {
+    document.getElementById('legend-menu').classList.toggle('active');
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('active');
+    } else {
+        console.error('Sidebar element not found!');
+    }
+}
+
+function toggleLatestEventsSidebar() {
+    const sidebar = document.getElementById('latest-events-sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('active');
+    } else {
+        console.error('Latest Events Sidebar element not found!');
+    }
+}
+
+function addLatestEvent(title, date, location, description) {
+    const content = document.getElementById('latest-events-content');
+    if (content) {
+        const eventHTML = `
+            <div class="latest-event">
+                <h3>${title}</h3>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Location:</strong> ${location}</p>
+                <p>${description}</p>
+            </div>
+        `;
+        content.innerHTML += eventHTML;
+    } else {
+        console.error('Latest Events Content element not found!');
+    }
+}
+
+// Example: Add some events to the Latest Events sidebar
+addLatestEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.');
+addLatestEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.');

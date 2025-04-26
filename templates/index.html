@@ -1,3 +1,4 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,41 +14,51 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
-
 <body>
-
-    <!-- Top-Bar -->
     <div id="top-bar">
         <div class="button-group">
-            <button class="nav-button"><h2>Filters</h2></button>
-            <button class="nav-button"><h2>Legend</h2></button>
-            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()">Switch to Dark Mode</button>
+            <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filters</h3></button>
+            <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legend</h3></button>
+            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Dark Mode</h3></button>
         </div>
-
-        <!-- Timestamp Anzeige -->
-        <div id="timestamp-display" style="margin-left: 20px; font-size: 14px;">
-            Letztes Update: -
-        </div>
-
-        <h1 class="title-right">Hamburg Event Map</h1>
-    </div>
-
-    <!-- Sidebar für Event-Details -->
-    <div id="sidebar">
-        <div class="close-btn" onclick="toggleSidebar()">✕</div>
-        <h2>Event Details</h2>
-        <div id="event-content">
-            <p>Event Title</p>
-            <p>Date: [PLACEHOLDER]</p>
-            <p>Location: [PLACEHOLDER]</p>
-            <p>Description: [PLACEHOLDER]</p>
+        <div class="title-container">
+            <h1 class="title-right">Unfälle</h1>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/UHH_Universität_Hamburg_Logo.svg/600px-UHH_Universität_Hamburg_Logo.svg.png" alt="Universität Hamburg Logo" class="uhh-logo">
         </div>
     </div>
 
-    <!-- Hauptbereich für die Map -->
+    <!-- Map Container -->
     <div id="map-container">
         <div id="map"></div>
         <div id="sidebar-toggle" onclick="toggleSidebar()"></div>
+    </div>
+
+    <!-- Filters Menu -->
+    <div id="filters-menu" class="slide-menu">
+        <div class="menu-header">
+            <h2>Filters</h2>
+            <button class="close-btn" onclick="toggleFiltersMenu()">✕</button>
+        </div>
+        <form id="filter-form">
+            <label>
+                <input type="checkbox" name="type" value="Accident"> Accident
+            </label>
+            <label>
+                <input type="checkbox" name="type" value="AuthorityOperation"> Authority Operation
+            </label>
+        </form>
+    </div>
+
+    <!-- Legend Menu -->
+    <div id="legend-menu" class="slide-menu">
+        <div class="menu-header">
+            <h2>Legend</h2>
+            <button class="close-btn" onclick="toggleLegendMenu()">✕</button>
+        </div>
+        <ul>
+            <li><strong>Accident:</strong> Traffic accidents.</li>
+            <li><strong>AuthorityOperation:</strong> Operations by authorities (e.g., fire department).</li>
+        </ul>
     </div>
 
     <!-- Sidebar für neueste Events -->
@@ -59,11 +70,30 @@
         </div>
     </div>
 
-    <!-- Button zum Öffnen der Latest Events Sidebar -->
+        <!-- Latest Events Sidebar -->
+    <div id="latest-events-sidebar" class="slide-menu">
+        <div class="menu-header">
+            <h2>Latest Events</h2>
+            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
+        </div>
+        <div id="latest-events-content">
+            <p>No events yet.</p>
+        </div>
+    </div>
+    
+    <!-- Button to Open the Latest Events Sidebar -->
     <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
+
+        <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="close-btn" onclick="toggleSidebar()">✕</div>
+        <h2>Event Details</h2>
+        <div id="event-content">
+            <p>Select an event to see details here.</p>
+        </div>
+    </div>
 
     <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-
 </body>
 </html>
