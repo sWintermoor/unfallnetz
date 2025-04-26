@@ -1,5 +1,4 @@
 // Laravel Echo Frontend Integration
-import Echo from 'laravel-echo';
 
 // Sidebar toggle functions
 function toggleSidebar() {
@@ -38,20 +37,22 @@ class MapEvent {
     }
 
     showDetails() {
-        // Fill the sidebar with event details
-        document.getElementById('event-content').innerHTML = `
-            <p>Event Title: ${this.title}</p>
-            <p>Date: ${this.date}</p>
-            <p>Location: ${this.location}</p>
-            <p>Description: ${this.description}</p>
+        // Dynamisch die Event-Daten in die Sidebar einfügen
+        const content = `
+            <h3>${this.title}</h3>
+            <p><strong>Datum:</strong> ${this.date}</p>
+            <p><strong>Ort:</strong> ${this.location}</p>
+            <p><strong>Beschreibung:</strong> ${this.description}</p>
         `;
-        // Open the sidebar
+    
+        document.getElementById('event-content').innerHTML = content;
+    
+        // Sidebar aufklappen
         toggleSidebar();
     }
-}
 
 // Initialize the map
-mapboxgl.accessToken = 'accesstoken';
+mapboxgl.accessToken = 'pk.eyJ1IjoiYXJzZW5paS1iZWxvdXNvdjA2IiwiYSI6ImNtOXh6YmR3MjFiZWsya3IwbXgyZ3U4eGYifQ.S6pKbiPWU2SlqWpoBrQh_Q';
 let currentStyleIndex = 0; // Index to track the current style
 
 // List of cool Mapbox styles
