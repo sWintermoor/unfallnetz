@@ -1,3 +1,6 @@
+// Laravel Echo Frontend Integration
+import Echo from 'laravel-echo';
+
 // Sidebar toggle functions
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -124,6 +127,33 @@ document.addEventListener('touchend', () => {
     isDragging = false;
 });
 
+
+// Initialize Echo
+window.Echo = new Echo({
+    broadcaster: 'pusher',
+    key: process.env.MIX_PUSHER_APP_KEY, // key (optional)
+    forceTLS: true // (optional)
+})
+
+// Listen for events on the channel
+Echo.channel('events').listen('EventCreated', e => {
+    var type = e.type; // Typ
+    var date = e.date; // Datum
+    var location = e.location; // Ort
+    var latitude = e.lat; // Breitengrad
+    var longitude = e.lng; // Längengrad
+    var description = e.description; // Beschreibung
+
+    var event = new MapEvent(
+        type,
+        date,
+        location,
+        description,
+        [longitude, latitude]
+    );
+
+    event.addToMap(map); // Füge das Event zur Karte hinzu
+})
 // Theme toggle function
 function toggleTheme() {
     // Increment the style index and loop back to the start if necessary
