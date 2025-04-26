@@ -1,0 +1,1 @@
+export const token = 'my-secret-token-12345';
