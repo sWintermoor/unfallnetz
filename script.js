@@ -127,16 +127,11 @@ document.addEventListener('touchend', () => {
     isDragging = false;
 });
 
+// Initialize socket connection
+const socket = io('http://localhost:5500');
 
-// Initialize Echo
-window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: process.env.MIX_PUSHER_APP_KEY, // key (optional)
-    forceTLS: true // (optional)
-})
-
-// Listen for events on the channel
-Echo.channel('events').listen('EventCreated', e => {
+// Listen for events on the WebSocket channel
+socket.on('EventCreated', function(e){
     var type = e.type; // Typ
     var date = e.date; // Datum
     var location = e.location; // Ort
