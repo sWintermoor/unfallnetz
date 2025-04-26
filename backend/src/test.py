@@ -28,29 +28,34 @@ def main():
         client.admin.command('ping')
         print("Pinged your deployment. You successfully connected to MongoDB!")
         
-        # database und collection:
-        db = client["Unfall"]                 
+        # Datenbank und Collection auswählen
+        db = client["Unfall"]
         collection = db["verkehrsmeldungen"]
 
-        # Daten von der API holen
+        # Verkehrsdaten abrufen
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
+
+            # Features extrahieren
             features = data.get("features", {})
+            if isinstance(features, list):
+                documents = features
 
-            # Überprüfen, ob features ein dict ist
-            if isinstance(features, dict):
-                # Optional: Vorher Collection leeren
-                # collection.delete_many({})
+                if documents:
+                    # Optional: Alte Einträge vorher löschen (wenn du willst)
+                    # collection.delete_many({})
 
-                # Alle Einträge (0, 1, 2, ...) durchlaufen
-                for key, entry in features.items():
-                    collection.insert_one(entry)
-                print(f"Erfolgreich {len(features)} Datensätze gespeichert.")
+                    # Neue Einträge speichern
+                    collection.insert_many(documents)
+                    print(f"Erfolgreich {len(documents)} Einträge gespeichert.")
+                else:
+                    print("Keine Daten zum Speichern gefunden.")
             else:
                 print("Fehler: 'features' ist kein Dictionary.")
         else:
-            print(f"Fehler beim Abrufen der Daten. Status Code: {response.status_code}")
+            print(f" Fehler beim Abrufen der Daten. Status Code: {response.status_code}")
+
     except ConnectionFailure:
         print("Fehler: Keine Verbindung zu MongoDB möglich.")
     except Exception as e:
