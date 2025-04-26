@@ -1,5 +1,4 @@
 // Laravel Echo Frontend Integration
-import Echo from 'laravel-echo';
 
 // Sidebar toggle functions
 function toggleSidebar() {
@@ -51,7 +50,7 @@ class MapEvent {
 }
 
 // Initialize the map
-mapboxgl.accessToken = 'accesstoken';
+mapboxgl.accessToken = 'pk.eyJ1IjoiYXJzZW5paS1iZWxvdXNvdjA2IiwiYSI6ImNtOXh6YmR3MjFiZWsya3IwbXgyZ3U4eGYifQ.S6pKbiPWU2SlqWpoBrQh_Q';
 let currentStyleIndex = 0; // Index to track the current style
 
 // List of cool Mapbox styles
