@@ -130,3 +130,34 @@ body {
     background: #888;
     border-radius: 4px;
 }
+
+/* Circular map marker */
+.map-marker {
+    width: 20px;
+    height: 20px;
+    background-color: #007bff;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+}
+
+/* Latest Events Sidebar */
+#latest-events-sidebar {
+    position: fixed;
+    right: -300px;
+    top: 0;
+    width: 300px;
+    height: 100%;
+    background-color: #f4f4f4;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+#latest-events-sidebar.active {
+    right: 0;
+}
+
+#latest-events-content {
+    padding: 20px;
+}
