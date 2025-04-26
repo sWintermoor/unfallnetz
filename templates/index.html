@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hamburg Event Map</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
@@ -39,23 +39,8 @@
             <p>No events yet.</p>
         </div>
     </div>
-<<<<<<< HEAD:index.html
     <!-- Button to toggle the Latest Events sidebar -->
     <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
-    <script src="script.js"></script>
-=======
-    <div id="sidebar">
-        <div class="close-btn" onclick="toggleSidebar()">✕</div>
-        <h2>Event Details</h2>
-        <div id="event-content">
-            <p>Event Title</p>
-            <p>Date: [PLACEHOLDER]</p>
-            <p>Location: [PLACEHOLDER]</p>
-            <p>Description: [PLACEHOLDER]</p>
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
->>>>>>> c45914c (delete token.js):templates/index.html
 </body>
 </html>
