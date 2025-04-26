@@ -49,9 +49,24 @@ class MapEvent {
 
 // Initialize the map
 mapboxgl.accessToken = 'accesstoken';
+let currentStyleIndex = 0; // Index to track the current style
+
+// List of cool Mapbox styles
+const mapStyles = [
+    { name: 'Standard', url: 'mapbox://styles/mapbox/streets-v11' },
+    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
+    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
+    { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
+    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
+    { name: 'Satellite Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
+    { name: 'Navigation Day', url: 'mapbox://styles/mapbox/navigation-day-v1' },
+    { name: 'Navigation Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
+];
+
+// Set the initial map style
 const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v11',
+    style: mapStyles[currentStyleIndex].url,
     center: [9.993682, 53.551086],
     zoom: 12
 });
@@ -108,3 +123,20 @@ document.getElementById('latest-events-sidebar').addEventListener('touchmove', (
 document.addEventListener('touchend', () => {
     isDragging = false;
 });
+
+// Theme toggle function
+function toggleTheme() {
+    // Increment the style index and loop back to the start if necessary
+    currentStyleIndex = (currentStyleIndex + 1) % mapStyles.length;
+
+    // Get the next style
+    const nextStyle = mapStyles[currentStyleIndex];
+
+    // Update the map style
+    map.setStyle(nextStyle.url);
+
+    // Update the button text to show the next style name
+    const themeToggleButton = document.getElementById('theme-toggle');
+    const nextStyleName = mapStyles[(currentStyleIndex + 1) % mapStyles.length].name;
+    themeToggleButton.textContent = `Switch to ${nextStyleName}`;
+}
