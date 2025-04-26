@@ -123,6 +123,12 @@ function addLatestEvent(title, date, location, description) {
     }
 }
 
+
+
+// Example: Add some events to the Latest Events sidebar
+addLatestEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.');
+addLatestEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.');
+
 // Add ScaleControl to the map
 const scale = new mapboxgl.ScaleControl({
     maxWidth: 100, // Maximale Breite des Maßstabs
@@ -130,6 +136,58 @@ const scale = new mapboxgl.ScaleControl({
 });
 map.addControl(scale, 'bottom-left'); // Positioniere den Maßstab unten links
 
-// Example: Add some events to the Latest Events sidebar
-addLatestEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.');
-addLatestEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.');
+const geolocate = new mapboxgl.GeolocateControl({
+    positionOptions: {
+        enableHighAccuracy: true
+    },
+    trackUserLocation: true, // Verfolgt den Standort des Nutzers
+    showUserHeading: true    // Zeigt die Blickrichtung des Nutzers an
+});
+map.addControl(geolocate, 'top-right'); // Positioniere oben rechts
+
+const fullscreenControl = new mapboxgl.FullscreenControl();
+map.addControl(fullscreenControl, 'top-right'); // Positioniere oben rechts
+
+const districts = {
+    "Eimsbüttel": {
+        "Schanzenviertel": [9.963, 53.564],
+        "Hoheluft-West": [9.973, 53.579],
+        "Eppendorf": [9.982, 53.581]
+    },
+    "Altona": {
+        "Ottensen": [9.933, 53.554],
+        "Altona-Altstadt": [9.935, 53.546],
+        "Bahrenfeld": [9.906, 53.565]
+    },
+    "Hamburg-Mitte": {
+        "St. Pauli": [9.966, 53.550],
+        "HafenCity": [10.002, 53.541],
+        "Altstadt": [10.001, 53.550]
+    }
+};
+
+function flyToDistrict() {
+    const select = document.getElementById('district-select');
+    const value = select.value;
+
+    if (!value) return; // Wenn nichts ausgewählt ist, nichts tun
+
+    // Wert aufteilen in District und Subdistrict
+    const [district, subdistrict] = value.split('-');
+
+    // Koordinaten aus den districts-Daten holen
+    const coordinates = districts[district]?.[subdistrict];
+
+    if (coordinates) {
+        map.flyTo({
+            center: coordinates,
+            zoom: 14,
+            speed: 0.8
+        });
+
+        // Dropdown zurücksetzen
+        select.value = "";
+    } else {
+        console.error('Coordinates not found for:', value);
+    }
+}

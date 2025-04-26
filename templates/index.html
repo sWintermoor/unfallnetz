@@ -20,6 +20,24 @@
             <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filters</h3></button>
             <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legend</h3></button>
             <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Dark Mode</h3></button>
+            <select id="district-select" class="nav-button" onchange="flyToDistrict()">
+                <option value="">Select District...</option>
+                <optgroup label="Eimsbüttel">
+                    <option value="Eimsbüttel-Schanzenviertel">Schanzenviertel</option>
+                    <option value="Eimsbüttel-Hoheluft-West">Hoheluft-West</option>
+                    <option value="Eimsbüttel-Eppendorf">Eppendorf</option>
+                </optgroup>
+                <optgroup label="Altona">
+                    <option value="Altona-Ottensen">Ottensen</option>
+                    <option value="Altona-Altona-Altstadt">Altona-Altstadt</option>
+                    <option value="Altona-Bahrenfeld">Bahrenfeld</option>
+                </optgroup>
+                <optgroup label="Hamburg-Mitte">
+                    <option value="Hamburg-Mitte-St. Pauli">St. Pauli</option>
+                    <option value="Hamburg-Mitte-HafenCity">HafenCity</option>
+                    <option value="Hamburg-Mitte-Altstadt">Altstadt</option>
+                </optgroup>
+            </select>
         </div>
         <div class="title-container">
             <h1 class="title-right">Unfälle</h1>
