@@ -1,7 +1,10 @@
+# The right backend file
+
 import os
 from dotenv import load_dotenv
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from datetime import datetime
 
 load_dotenv()
 mongodb_username = os.getenv("MONGODB_USERNAME")
@@ -12,7 +15,12 @@ import json
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
-
+def add_timestamp(documents):
+    for doc in documents:
+        # Adding a timestamp
+        if "timestamp" not in doc:
+            doc["timestamp"] = datetime.now()
+    return documents
 
 def main():
     # URL der API
@@ -47,8 +55,10 @@ def main():
                     # collection.delete_many({})
 
                     # Neue Einträge speichern
-                    collection.insert_many(documents)
-                    print(f"Erfolgreich {len(documents)} Einträge gespeichert.")
+
+                    documents_with_timestamp = add_timestamp(documents)
+                    collection.insert_many(documents_with_timestamp)
+                    print(f"Erfolgreich {len(documents_with_timestamp)} Einträge gespeichert.")
                 else:
                     print("Keine Daten zum Speichern gefunden.")
             else:
