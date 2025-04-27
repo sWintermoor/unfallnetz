@@ -47,7 +47,8 @@ def main():
                     # collection.delete_many({})
 
                     # Neue Einträge speichern
-                    collection.insert_many(documents)
+                    collection.insert_many(documents)                       #Daten komplett löschen db["verkehrsmeldungen"].drop()
+                    
                     print(f"Erfolgreich {len(documents)} Einträge gespeichert.")
                 else:
                     print("Keine Daten zum Speichern gefunden.")
