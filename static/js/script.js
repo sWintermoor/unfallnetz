@@ -25,44 +25,167 @@ const map = new mapboxgl.Map({
 });
 map.addControl(new mapboxgl.NavigationControl());
 
-// MapEvent-Klasse für Marker
 class MapEvent {
     constructor(title, date, location, description, coordinates) {
         this.title = title;
-        this.date = date;
+        this.date = new Date(date); // Konvertiere Datum in ein Date-Objekt
         this.location = location;
         this.description = description;
-        this.coordinates = coordinates;
+        this.coordinates = coordinates; // [lng, lat]
         this.marker = null;
     }
+
+    getGradientColor() {
+        const now = new Date();
+        const timeDiff = now - this.date; // Zeitdifferenz in Millisekunden
+        const oneDay = 1000 * 60 * 60 * 24; // Millisekunden in einem Tag
+        const daysDiff = timeDiff / oneDay; // Zeitdifferenz in Tagen
+    
+        if (daysDiff <= 0) {
+            return 'rgb(0, 255, 0)'; // Grün (heute)
+        } else if (daysDiff <= 7) {
+            const ratio = daysDiff / 7; // Verhältnis innerhalb der Woche
+            const red = Math.round(255 * ratio); // Rotanteil steigt
+            const green = Math.round(255 * (1 - ratio)); // Grünanteil sinkt
+            return `rgb(${red}, 255, 0)`; // Übergang von Grün zu Gelb
+        } else if (daysDiff <= 14) {
+            const ratio = (daysDiff - 7) / 7; // Verhältnis innerhalb der zweiten Woche
+            const green = Math.round(255 * (1 - ratio)); // Grünanteil sinkt weiter
+            return `rgb(255, ${green}, 0)`; // Übergang von Gelb zu Rot
+        } else if (daysDiff <= 30) {
+            const ratio = (daysDiff - 14) / 16; // Verhältnis innerhalb des Monats
+            const gray = Math.round(128 + 127 * ratio); // Übergang zu Grau
+            return `rgb(${gray}, ${gray}, ${gray})`; // Grau
+        } else {
+            return 'rgb(200, 200, 200)'; // Hellgrau (älter als 1 Monat)
+        }
+    }
+
+    getMarkerOpacity() {
+        const now = new Date();
+        const timeDiff = now - this.date; // Zeitdifferenz in Millisekunden
+        const oneDay = 1000 * 60 * 60 * 24; // Millisekunden in einem Tag
+        const daysDiff = timeDiff / oneDay; // Zeitdifferenz in Tagen
+
+        if (daysDiff <= 1) {
+            return 1; // Volle Sichtbarkeit
+        } else if (daysDiff <= 7) {
+            return 1; // Leicht transparent
+        } else if (daysDiff <= 14) {
+            return 1; // Mehr transparent
+        } else if (daysDiff <= 30) {
+            return 0.8; // Noch transparenter
+        } else {
+            return 0.4; // Fast unsichtbar
+        }
+    }
+
     addToMap(map) {
         const el = document.createElement('div');
         el.className = 'map-marker';
+        el.style.backgroundColor = this.getGradientColor(); // Setze die Farbe basierend auf dem Alter
+        el.style.opacity = this.getMarkerOpacity(); // Setze die Transparenz basierend auf dem Alter
+        el.style.width = '15px';
+        el.style.height = '15px';
+        el.style.borderRadius = '75%';
+
         this.marker = new mapboxgl.Marker(el)
-            .setLngLat(this.coordinates)
+            .setLngLat(this.coordinates) // Setze die Koordinaten
             .addTo(map);
 
         // Add click event to show details in the sidebar
         el.addEventListener('click', () => {
             showEventDetails(this);
         });
+
+        // Add this event to the Latest Events sidebar
+        addLatestEvent(
+            this.title,
+            this.date.toISOString().split('T')[0], // Format: YYYY-MM-DD
+            this.location,
+            this.coordinates[1], // Latitude
+            this.coordinates[0], // Longitude
+            this.description
+        );
     }
 }
 
-// Beispiel-Events
-const event1 = new MapEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.', [9.993682, 53.551086]);
-event1.addToMap(map);
-const event2 = new MapEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.', [9.9510, 53.5530]);
-event2.addToMap(map);
+const mapEvent1 = new MapEvent(
+    'Accident',
+    '2024-11-20 13:08:00',
+    'Hamburg, Alsterglacis',
+    'Hamburg, Alsterglacis, stadtauswärts in Höhe Mittelweg Unfallstelle geräumt',
+    [9.987, 53.565] // [lng, lat]
+);
 
-// Show event details in the sidebar
+const mapEvent2 = new MapEvent(
+    'Authority Operation',
+    '2024-11-26 18:28:00',
+    'Hamburg, Landwehr',
+    'B5 Hamburg, Landwehr in Richtung Süden in Höhe Angerstraße gesperrt, Feuerwehreinsatz',
+    [10.001, 53.550] // [lng, lat]
+);
+
+// Füge die Events zur Karte und Sidebar hinzu
+mapEvent1.addToMap(map);
+mapEvent2.addToMap(map);
+
+const mapEvent3 = new MapEvent(
+    'Accident',
+    '2025-04-13 14:45:00',
+    'Hamburg, Reeperbahn',
+    'Ein Verkehrsunfall mit mehreren Fahrzeugen auf der Reeperbahn in Richtung Osten. Polizei ist vor Ort.',
+    [9.959, 53.550] // [lng, lat]
+);
+
+const mapEvent4 = new MapEvent(
+    'Authority Operation',
+    '2025-04-16 09:30:00',
+    'Hamburg, HafenCity',
+    'Feuerwehreinsatz in der HafenCity aufgrund eines gemeldeten Brandes in einem Wohngebäude.',
+    [10.002, 53.541] // [lng, lat]
+);
+
+const mapEvent5 = new MapEvent(
+    'Accident',
+    '2025-04-20 18:15:00',
+    'Hamburg, Elbchaussee',
+    'Ein Motorradunfall auf der Elbchaussee in Richtung Westen. Der Verkehr ist stark beeinträchtigt.',
+    [9.926, 53.546] // [lng, lat]
+);
+
+const mapEvent6 = new MapEvent(
+    'Authority Operation',
+    '2025-04-23 11:00:00',
+    'Hamburg, Jungfernstieg',
+    'Polizeieinsatz am Jungfernstieg aufgrund eines verdächtigen Gegenstands. Bereich wurde abgesperrt.',
+    [9.991, 53.553] // [lng, lat]
+);
+
+const mapEvent7 = new MapEvent(
+    'Accident',
+    '2025-04-28 07:50:00',
+    'Hamburg, Altonaer Straße',
+    'Ein Verkehrsunfall mit einem LKW und einem PKW auf der Altonaer Straße. Der Verkehr wird umgeleitet.',
+    [9.935, 53.554] // [lng, lat]
+);
+
+// Füge die neuen Events zur Karte und Sidebar hinzu
+mapEvent3.addToMap(map);
+mapEvent4.addToMap(map);
+mapEvent5.addToMap(map);
+mapEvent6.addToMap(map);
+mapEvent7.addToMap(map);
+
 function showEventDetails(event) {
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('event-content');
+    const [lng, lat] = event.coordinates; // Extrahiere lng und lat aus dem coordinates-Array
     content.innerHTML = `
         <h2>${event.title}</h2>
         <p><strong>Date:</strong> ${event.date}</p>
         <p><strong>Location:</strong> ${event.location}</p>
+        <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
         <p>${event.description}</p>
     `;
     sidebar.classList.add('active');
@@ -106,14 +229,15 @@ function toggleLatestEventsSidebar() {
     }
 }
 
-function addLatestEvent(title, date, location, description) {
+function addLatestEvent(type, date, location, lat, lng, description) {
     const content = document.getElementById('latest-events-content');
     if (content) {
         const eventHTML = `
             <div class="latest-event">
-                <h3>${title}</h3>
+                <h3>${type}</h3>
                 <p><strong>Date:</strong> ${date}</p>
                 <p><strong>Location:</strong> ${location}</p>
+                <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
                 <p>${description}</p>
             </div>
         `;
@@ -122,13 +246,6 @@ function addLatestEvent(title, date, location, description) {
         console.error('Latest Events Content element not found!');
     }
 }
-
-
-
-// Example: Add some events to the Latest Events sidebar
-addLatestEvent('Music Festival', '2023-10-15', 'Hamburg Central Park', 'A great music festival.');
-addLatestEvent('Food Truck Rally', '2023-11-20', 'Sternschanze', 'Delicious street food.');
-
 // Add ScaleControl to the map
 const scale = new mapboxgl.ScaleControl({
     maxWidth: 100, // Maximale Breite des Maßstabs

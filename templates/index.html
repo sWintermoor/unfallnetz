@@ -99,8 +99,15 @@
         </div>
     </div>
     
-    <!-- Button to Open the Latest Events Sidebar -->
-    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
+    <div id="latest-events-sidebar" class="slide-menu">
+        <div class="menu-header">
+            <h2>Latest Events</h2>
+            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
+        </div>
+        <div id="latest-events-content">
+            <p>No events yet.</p>
+        </div>
+    </div>
 
         <!-- Sidebar -->
     <div id="sidebar">
@@ -110,6 +117,9 @@
             <p>Select an event to see details here.</p>
         </div>
     </div>
+
+        <!-- Button to Open the Latest Events Sidebar -->
+    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
 
     <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
