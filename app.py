@@ -21,7 +21,8 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 async def run_socketio():
-    socketio.run(app, debug=True)
+    print("SocketIO started")
+    socketio.run(app, debug=True, use_reloader=False)
 
 # Definiere eine Route (eine URL, die eine Funktion aufruft)
 # Verbindung zu deiner MongoDB
@@ -33,28 +34,17 @@ mongo = PyMongo(app)
 def home():
     return render_template("index.html")
 
-def new_entry():
-    # Falls der Agent neue Einträge in die Datenbank einfügt, wird diese Funktion ausgeführt.
-    pass
-
 async def update_system():
     print("Update System started")
+    url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
     uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
 
-    # Create a new client and connect to the server
-    client = MongoClient(uri, server_api=ServerApi('1'))
+    client, db, collection = initialize_db(url, uri)
 
-    # Verbindungs-Check: Send a ping to confirm a successful connection
-    client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
-    
-    # Datenbank und Collection auswählen
-    db = client["Unfall"]
     while True:
         print("loop")
-        initialize_db()
-        await asyncio.sleep(1)
-        for entry in mongo.db["verkehrsmeldungen"].find():
+        await asyncio.sleep(5)
+        for entry in collection.find():
             eventType = entry.get("properties", {}).get("status", "Unknown")
             eventDate = entry.get("properties", {}).get("start", "Unknown")
             eventLat = entry.get("geometry", {}).get("coordinates", [0, 0])[1]
@@ -63,7 +53,10 @@ async def update_system():
 
             send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
 
+        print("sending finished")
         await asyncio.sleep(60)
+
+        #check_for_new_entries()
 
 
 def send_event(eventType, eventDate, eventLat, eventLng, eventDescription):
@@ -108,11 +101,10 @@ def add_timestamp(documents):
 def sort_by_event_date(documents):
     return sorted(documents, key=lambda x: x.get('properties', datetime.min).get('start', datetime.min), reverse=True)
 
-def initialize_db():
+def initialize_db(input_url, input_uri):
     # URL der API
-    url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
-    # URI
-    uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
+    url = input_url
+    uri = input_uri
 
     try:
         # Create a new client and connect to the server
@@ -153,16 +145,17 @@ def initialize_db():
         else:
             print(f" Fehler beim Abrufen der Daten. Status Code: {response.status_code}")
 
+        return client, db, collection
+
     except ConnectionFailure:
         print("Fehler: Keine Verbindung zu MongoDB möglich.")
     except Exception as e:
         print(f"Ein Fehler ist aufgetreten: {e}")
 
 async def main():
-    await asyncio.gather(
-        run_socketio(),
-        update_system()
-    )
+    socketio_task = asyncio.create_task(asyncio.to_thread(run_socketio))
+    update_task = asyncio.create_task(update_system())
+    await asyncio.gather(socketio_task, update_task)
 
 if __name__ == '__main__':
     asyncio.run(main())
