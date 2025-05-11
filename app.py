@@ -20,7 +20,7 @@ app = Flask(__name__)
 # Create a SocketIO instance
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-async def run_socketio():
+def run_socketio():
     print("SocketIO started")
     socketio.run(app, debug=True, use_reloader=False)
 
@@ -153,7 +153,7 @@ def initialize_db(input_url, input_uri):
         print(f"Ein Fehler ist aufgetreten: {e}")
 
 async def main():
-    socketio_task = asyncio.create_task(asyncio.to_thread(run_socketio))
+    socketio_task = asyncio.to_thread(run_socketio)
     update_task = asyncio.create_task(update_system())
     await asyncio.gather(socketio_task, update_task)
 
