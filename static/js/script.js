@@ -123,7 +123,7 @@ socket.on('EventCreated', (data) => {
         data.type,
         data.date,
         data.location,
-        data,description,
+        data.description,
         [data.lng, data.lat]
     )
     newEvent.addToMap(map);

@@ -43,7 +43,7 @@ async def update_system():
 
     while True:
         print("loop")
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         for entry in collection.find():
             eventType = entry.get("properties", {}).get("status", "Unknown")
             eventDate = entry.get("properties", {}).get("start", "Unknown")
@@ -54,7 +54,7 @@ async def update_system():
             send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
 
         print("sending finished")
-        await asyncio.sleep(60)
+        await asyncio.sleep(20)
 
         #check_for_new_entries()
 
