@@ -39,25 +39,78 @@ async def update_system():
     url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
     uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
 
-    client, db, collection = initialize_db(url, uri)
+    client, db, collection, newest_entry = initialize_db(url, uri)
+
+    await asyncio.sleep(10)
+
+    # Sending data from MongoDB to Frontend
+
+    print("sending data from MongoDB to Frontend")
+
+    for entry in collection.find():
+        eventType = entry.get("properties", {}).get("status", "Unknown")
+        eventDate = entry.get("properties", {}).get("start", "Unknown")
+        eventLat = entry.get("geometry", {}).get("coordinates", [0, 0])[1]
+        eventLng = entry.get("geometry", {}).get("coordinates", [0, 0])[0]
+        eventDescription = entry.get("properties", {}).get("description", "No description")
+
+        send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
+
+    print("sending finished")
 
     while True:
         print("loop")
-        await asyncio.sleep(10)
-        for entry in collection.find():
-            eventType = entry.get("properties", {}).get("status", "Unknown")
-            eventDate = entry.get("properties", {}).get("start", "Unknown")
-            eventLat = entry.get("geometry", {}).get("coordinates", [0, 0])[1]
-            eventLng = entry.get("geometry", {}).get("coordinates", [0, 0])[0]
-            eventDescription = entry.get("properties", {}).get("description", "No description")
 
-            send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
+        # Check for new entries in source website
+        # TODO: Überprüfen, ob features eine Liste ist
+        response = requests.get(url)
+        data = response.json()
+        features = data.get("features", {})
+        get_last_entry = features[-1]
 
-        print("sending finished")
+        if get_last_entry != newest_entry:
+
+            features = sort_by_event_date(features)
+            if newest_entry:
+                newest_entry_date = parse_date(newest_entry.get("properties", {}).get("start", "Unknown"))
+            else:
+                newest_entry_date = datetime.min
+            new_features = []
+
+            for entry in features:
+                entry_date = parse_date(entry.get("properties", {}).get("start", "Unknown"))                
+                if entry_date > newest_entry_date:
+                    new_features.append(entry)
+                else:
+                    # Adding new features to the database
+                    if len(new_features) > 0:
+                        collection.insert_many(new_features)
+                        print(f"Erfolgreich {len(new_features)} Einträge gespeichert.")
+
+                        # Sending new features to the frontend
+                        print("sending new features to the frontend")
+                        for new_entry in new_features:
+                            eventType = new_entry.get("properties", {}).get("status", "Unknown")
+                            eventDate = new_entry.get("properties", {}).get("start", "Unknown")
+                            eventLat = new_entry.get("geometry", {}).get("coordinates", [0, 0])[1]
+                            eventLng = new_entry.get("geometry", {}).get("coordinates", [0, 0])[0]
+                            eventDescription = new_entry.get("properties", {}).get("description", "No description")
+
+                            send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
+                        print("sending new features finished")
+                    break
+            newest_entry = get_last_entry
+
+        else:
+            print("No new data available.")
+
         await asyncio.sleep(20)
 
-        #check_for_new_entries()
-
+def parse_date(date_str):
+    try: 
+        return datetime.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        return datetime.min
 
 def send_event(eventType, eventDate, eventLat, eventLng, eventDescription):
     socketio.emit('EventCreated', {
@@ -106,6 +159,8 @@ def initialize_db(input_url, input_uri):
     url = input_url
     uri = input_uri
 
+    newest_entry = None
+
     try:
         # Create a new client and connect to the server
         client = MongoClient(uri, server_api=ServerApi('1'))
@@ -121,12 +176,16 @@ def initialize_db(input_url, input_uri):
         # Verkehrsdaten abrufen
         response = requests.get(url)
         if response.status_code == 200:
+
             data = response.json()
 
             # Features extrahieren
             features = data.get("features", {})
             if isinstance(features, list):
                 documents = features
+
+                # Save the newest entry
+                newest_entry = documents[-1]
 
                 if documents:
                     
@@ -145,7 +204,7 @@ def initialize_db(input_url, input_uri):
         else:
             print(f" Fehler beim Abrufen der Daten. Status Code: {response.status_code}")
 
-        return client, db, collection
+        return client, db, collection, newest_entry
 
     except ConnectionFailure:
         print("Fehler: Keine Verbindung zu MongoDB möglich.")
