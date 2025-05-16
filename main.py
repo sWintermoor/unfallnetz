@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_pymongo import PyMongo
+# from flask_pymongo import PyMongo # TODO: Check whether unnecessary
 from flask_socketio import SocketIO
 
 import asyncio
@@ -24,7 +24,7 @@ def run_socketio():
 
 async def main():
     app.config.from_object(Config)
-    mongo = PyMongo(app)
+    # mongo = PyMongo(app) # TODO: Check whether unnecessary
 
     register_routes(app)
 
