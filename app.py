@@ -17,6 +17,27 @@ import asyncio
 
 app = Flask(__name__)
 
+class Collection_handler:
+    def __init__(self):
+        self.collection = None
+
+    def find(self):
+        return self.collection.find()
+
+    def insert_many(self, documents):
+        self.collection.insert_many(documents)
+
+    def delete_many(self, query):
+        self.collection.delete_many(query)
+
+    def set_collection(self, collection):
+        self.collection = collection
+
+    def get_collection(self):
+        return self.collection
+
+COLLECTION = Collection_handler()
+
 # Create a SocketIO instance
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -32,22 +53,14 @@ mongo = PyMongo(app)
 # Startseite
 @app.route('/')
 def home():
+    # return render_template("index.html")
     return render_template("index.html")
 
-async def update_system():
-    print("Update System started")
-    url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
-    uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
-
-    client, db, collection, newest_entry = initialize_db(url, uri)
-
-    await asyncio.sleep(10)
-
-    # Sending data from MongoDB to Frontend
-
+@socketio.on('connect')
+def handle_connect():
     print("sending data from MongoDB to Frontend")
 
-    for entry in collection.find():
+    for entry in COLLECTION.find():
         eventType = entry.get("properties", {}).get("status", "Unknown")
         eventDate = entry.get("properties", {}).get("start", "Unknown")
         eventLat = entry.get("geometry", {}).get("coordinates", [0, 0])[1]
@@ -57,6 +70,15 @@ async def update_system():
         send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
 
     print("sending finished")
+
+async def update_system():
+    print("Update System started")
+    url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
+    uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
+
+    client, db, newest_entry = initialize_db(url, uri)
+
+    await asyncio.sleep(10)
 
     while True:
         print("loop")
@@ -84,7 +106,7 @@ async def update_system():
                 else:
                     # Adding new features to the database
                     if len(new_features) > 0:
-                        collection.insert_many(new_features)
+                        COLLECTION.insert_many(new_features)
                         print(f"Erfolgreich {len(new_features)} Einträge gespeichert.")
 
                         # Sending new features to the frontend
@@ -171,7 +193,7 @@ def initialize_db(input_url, input_uri):
         
         # Datenbank und Collection auswählen
         db = client["Unfall"]
-        collection = db["verkehrsmeldungen"]
+        COLLECTION.set_collection(db["verkehrsmeldungen"])
 
         # Verkehrsdaten abrufen
         response = requests.get(url)
@@ -190,12 +212,12 @@ def initialize_db(input_url, input_uri):
                 if documents:
                     
                     # Optional: Alte Einträge vorher löschen (wenn du willst)
-                    collection.delete_many({})
+                    COLLECTION.delete_many({})
 
                     # Neue Einträge speichern
                     documents_with_timestamp = add_timestamp(documents)
                     sorted_documents = sort_by_event_date(documents_with_timestamp)
-                    collection.insert_many(sorted_documents)
+                    COLLECTION.insert_many(sorted_documents)
                     print(f"Erfolgreich {len(sorted_documents)} Einträge gespeichert.")
                 else:
                     print("Keine Daten zum Speichern gefunden.")
@@ -204,7 +226,7 @@ def initialize_db(input_url, input_uri):
         else:
             print(f" Fehler beim Abrufen der Daten. Status Code: {response.status_code}")
 
-        return client, db, collection, newest_entry
+        return client, db, newest_entry
 
     except ConnectionFailure:
         print("Fehler: Keine Verbindung zu MongoDB möglich.")
