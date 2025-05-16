@@ -110,6 +110,33 @@ class MapEvent {
     }
 }
 
+//FETCH EVENTS FROM DB
+//Socket.io verbindung herstellen
+const socket = io();
+
+//Listener für 'EventCreated' Events
+socket.on('EventCreated', (data) => {
+    console.log('Neues Event empfangen:', data);
+
+    //Neues MapEvent erstellen
+    const newEvent = new MapEvent(
+        data.type,
+        data.date,
+        data.location,
+        data.description,
+        [data.lng, data.lat]
+    )
+    newEvent.addToMap(map);
+})
+
+socket.on('connect', () => {
+    console.log('Verbunden mit Server')
+})
+
+socket.on('disconnect', () => {
+    console.log('Verbindung zum Server getrennt')
+})
+
 const mapEvent1 = new MapEvent(
     'Accident',
     '2024-11-20 13:08:00',
