@@ -12,6 +12,7 @@ from datetime import datetime
 from src import CollectionHandler
 from src import Config
 from src.routes import register_routes
+from src.websocket import register_websocket, send_data
 
 app = Flask(__name__)
 
@@ -29,21 +30,7 @@ mongo = PyMongo(app)
 
 register_routes(app)
 
-
-@socketio.on('connect')
-def handle_connect():
-    print("sending data from MongoDB to Frontend")
-
-    for entry in COLLECTION.find():
-        eventType = entry.get("properties", {}).get("status", "Unknown")
-        eventDate = entry.get("properties", {}).get("start", "Unknown")
-        eventLat = entry.get("geometry", {}).get("coordinates", [0, 0])[1]
-        eventLng = entry.get("geometry", {}).get("coordinates", [0, 0])[0]
-        eventDescription = entry.get("properties", {}).get("description", "No description")
-
-        send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
-
-    print("sending finished")
+register_websocket(socketio, COLLECTION)
 
 async def update_system():
     print("Update System started")
@@ -84,16 +71,8 @@ async def update_system():
                         print(f"Erfolgreich {len(new_features)} Einträge gespeichert.")
 
                         # Sending new features to the frontend
-                        print("sending new features to the frontend")
-                        for new_entry in new_features:
-                            eventType = new_entry.get("properties", {}).get("status", "Unknown")
-                            eventDate = new_entry.get("properties", {}).get("start", "Unknown")
-                            eventLat = new_entry.get("geometry", {}).get("coordinates", [0, 0])[1]
-                            eventLng = new_entry.get("geometry", {}).get("coordinates", [0, 0])[0]
-                            eventDescription = new_entry.get("properties", {}).get("description", "No description")
-
-                            send_event(eventType, eventDate, eventLat, eventLng, eventDescription)
-                        print("sending new features finished")
+                        print("New Features sending...")
+                        send_data(socketio, new_features)
                     break
             newest_entry = get_last_entry
 
@@ -107,15 +86,6 @@ def parse_date(date_str):
         return datetime.fromisoformat(date_str)
     except (ValueError, TypeError):
         return datetime.min
-
-def send_event(eventType, eventDate, eventLat, eventLng, eventDescription):
-    socketio.emit('EventCreated', {
-        'type': eventType,
-        'date': eventDate,
-        'lat': eventLat,
-        'lng': eventLng,
-        'description': eventDescription
-})
 
 # Database
 
