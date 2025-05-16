@@ -13,6 +13,7 @@ from src import CollectionHandler
 from src import Config
 from src.routes import register_routes
 from src.websocket import register_websocket, send_data
+from src.utils import utils_parse_date, utils_add_timestamp, utils_sort_by_event_date
 
 app = Flask(__name__)
 
@@ -53,15 +54,15 @@ async def update_system():
 
         if get_last_entry != newest_entry:
 
-            features = sort_by_event_date(features)
+            features = utils_sort_by_event_date(features)
             if newest_entry:
-                newest_entry_date = parse_date(newest_entry.get("properties", {}).get("start", "Unknown"))
+                newest_entry_date = utils_parse_date(newest_entry.get("properties", {}).get("start", "Unknown"))
             else:
                 newest_entry_date = datetime.min
             new_features = []
 
             for entry in features:
-                entry_date = parse_date(entry.get("properties", {}).get("start", "Unknown"))                
+                entry_date = utils_parse_date(entry.get("properties", {}).get("start", "Unknown"))                
                 if entry_date > newest_entry_date:
                     new_features.append(entry)
                 else:
@@ -80,24 +81,6 @@ async def update_system():
             print("No new data available.")
 
         await asyncio.sleep(20)
-
-def parse_date(date_str):
-    try: 
-        return datetime.fromisoformat(date_str)
-    except (ValueError, TypeError):
-        return datetime.min
-
-# Database
-
-def add_timestamp(documents):
-    for doc in documents:
-        # Adding a timestamp
-        if "timestamp" not in doc:
-            doc["timestamp"] = datetime.now()
-    return documents
-
-def sort_by_event_date(documents):
-    return sorted(documents, key=lambda x: x.get('properties', datetime.min).get('start', datetime.min), reverse=True)
 
 def initialize_db(input_url, input_uri):
     # URL der API
@@ -138,8 +121,8 @@ def initialize_db(input_url, input_uri):
                     COLLECTION.delete_many({})
 
                     # Neue Einträge speichern
-                    documents_with_timestamp = add_timestamp(documents)
-                    sorted_documents = sort_by_event_date(documents_with_timestamp)
+                    documents_with_timestamp = utils_add_timestamp(documents)
+                    sorted_documents = utils_sort_by_event_date(documents_with_timestamp)
                     COLLECTION.insert_many(sorted_documents)
                     print(f"Erfolgreich {len(sorted_documents)} Einträge gespeichert.")
                 else:
