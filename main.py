@@ -9,7 +9,8 @@ import requests
 import asyncio
 from datetime import datetime
 
-from src import CollectionHandler
+from backend.src import CollectionHandler
+from backend.src import Config
 
 app = Flask(__name__)
 
@@ -22,9 +23,7 @@ def run_socketio():
     print("SocketIO started")
     socketio.run(app, debug=True, use_reloader=False)
 
-# Definiere eine Route (eine URL, die eine Funktion aufruft)
-# Verbindung zu deiner MongoDB
-app.config["MONGO_URI"] = "mongodb://localhost:27017/unfallnetz"
+app.config.from_object(Config)
 mongo = PyMongo(app)
 
 # Startseite
@@ -50,8 +49,8 @@ def handle_connect():
 
 async def update_system():
     print("Update System started")
-    url = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?status=UNFALL&limit=3000&f=json"
-    uri = "mongodb+srv://jaikamboj:0Ju6y7Vadk1I7NQj@cluster0.cmmgnde.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" #works but not with os.getenv
+    url = app.config["SOURCE_URL"]
+    uri = app.config["MONGODB_URI"]
 
     client, db, newest_entry = initialize_db(url, uri)
 
