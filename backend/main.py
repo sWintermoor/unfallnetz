@@ -1,42 +1,19 @@
-from datetime import datetime
 from flask import Flask, render_template, jsonify
 from flask_pymongo import PyMongo
-from flask_socketio import SocketIO, emit
-
-from dotenv import load_dotenv
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-from datetime import datetime
-
-import requests
-import json
+from flask_socketio import SocketIO
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+from pymongo.server_api import ServerApi
+import requests
 
 import asyncio
+from datetime import datetime
+
+from src import CollectionHandler
 
 app = Flask(__name__)
 
-class Collection_handler:
-    def __init__(self):
-        self.collection = None
-
-    def find(self):
-        return self.collection.find()
-
-    def insert_many(self, documents):
-        self.collection.insert_many(documents)
-
-    def delete_many(self, query):
-        self.collection.delete_many(query)
-
-    def set_collection(self, collection):
-        self.collection = collection
-
-    def get_collection(self):
-        return self.collection
-
-COLLECTION = Collection_handler()
+COLLECTION = CollectionHandler()
 
 # Create a SocketIO instance
 socketio = SocketIO(app, cors_allowed_origins="*")
