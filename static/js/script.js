@@ -5,14 +5,14 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiM25heWNpIiwiYSI6ImNtOXhkY2g4MjB4OWUycHM2MTVvb
 
 // Alle verfügbaren Styles, einschließlich des Hamburg Custom Maps
 const themeStyles = [
-    { name: 'Default', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json' },
-    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
-    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
+    { name: 'Standard', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json' },
+    { name: 'Dunkler Modus', url: 'mapbox://styles/mapbox/dark-v10' },
+    { name: 'Heller Modus', url: 'mapbox://styles/mapbox/light-v10' },
     { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
-    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
+    { name: 'Satellit', url: 'mapbox://styles/mapbox/satellite-v9' },
     { name: 'Sat. Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
     { name: 'Navigation', url: 'mapbox://styles/mapbox/navigation-day-v1' },
-    { name: 'Nav. Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
+    { name: 'Nav. Nacht', url: 'mapbox://styles/mapbox/navigation-night-v1' }
 ];
 let currentThemeIndex = 0; // Zeigt, welcher themeStyles-Eintrag als nächstes kommt
 
