@@ -82,6 +82,7 @@ class MapEvent {
 
     addToMap(map) {
         const el = document.createElement('div');
+        el.type = this.title; // title ist der Typ: Accident oder Authority Operation
         el.className = 'map-marker';
         el.style.backgroundColor = this.getGradientColor(); // Setze die Farbe basierend auf dem Alter
         el.style.opacity = this.getMarkerOpacity(); // Setze die Transparenz basierend auf dem Alter
@@ -240,22 +241,15 @@ function toggleFiltersMenu() {
     document.getElementById('filters-menu').classList.toggle('active');
 }
 function updateFilter(checkbox){
-    if(checkbox.value == "Accident"){
-        if(checkbox.checked){
-            console.log("Accident filter enabled");
+    const filterType = checkbox.value;
+    const isChecked = checkbox.checked;
+
+    document.querySelectorAll('.map-marker').forEach(marker => {
+        console.log(marker.type, filterType, isChecked);
+        if (marker.type === filterType) {
+            marker.style.display = isChecked ? 'block' : 'none';
         }
-        else {
-            console.log("Accident filter disabled");
-        }
-    }
-    else if(checkbox.value == "AuthorityOperation"){
-        if(checkbox.checked){
-            console.log("Authority Operation filter enabled");
-        }
-        else {
-            console.log("Authority Operation filter disabled");
-        }
-    }
+    })
 }
 
 function toggleLegendMenu() {
