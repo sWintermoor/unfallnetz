@@ -5,14 +5,14 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiM25heWNpIiwiYSI6ImNtOXhkY2g4MjB4OWUycHM2MTVvb
 
 // Alle verfügbaren Styles, einschließlich des Hamburg Custom Maps
 const themeStyles = [
-    { name: 'Default', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json' },
-    { name: 'Dark Mode', url: 'mapbox://styles/mapbox/dark-v10' },
-    { name: 'Light Mode', url: 'mapbox://styles/mapbox/light-v10' },
+    { name: 'Standard', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json' },
+    { name: 'Dunkler Modus', url: 'mapbox://styles/mapbox/dark-v10' },
+    { name: 'Heller Modus', url: 'mapbox://styles/mapbox/light-v10' },
     { name: 'Outdoors', url: 'mapbox://styles/mapbox/outdoors-v11' },
-    { name: 'Satellite', url: 'mapbox://styles/mapbox/satellite-v9' },
+    { name: 'Satellit', url: 'mapbox://styles/mapbox/satellite-v9' },
     { name: 'Sat. Streets', url: 'mapbox://styles/mapbox/satellite-streets-v11' },
     { name: 'Navigation', url: 'mapbox://styles/mapbox/navigation-day-v1' },
-    { name: 'Nav. Night', url: 'mapbox://styles/mapbox/navigation-night-v1' }
+    { name: 'Nav. Nacht', url: 'mapbox://styles/mapbox/navigation-night-v1' }
 ];
 let currentThemeIndex = 0; // Zeigt, welcher themeStyles-Eintrag als nächstes kommt
 
@@ -82,6 +82,7 @@ class MapEvent {
 
     addToMap(map) {
         const el = document.createElement('div');
+        el.type = this.title; // title ist der Typ: Accident oder Authority Operation
         el.className = 'map-marker';
         el.style.backgroundColor = this.getGradientColor(); // Setze die Farbe basierend auf dem Alter
         el.style.opacity = this.getMarkerOpacity(); // Setze die Transparenz basierend auf dem Alter
@@ -137,6 +138,9 @@ socket.on('disconnect', () => {
     console.log('Verbindung zum Server getrennt')
 })
 
+// Dummy Werte
+
+/*
 const mapEvent1 = new MapEvent(
     'Accident',
     '2024-11-20 13:08:00',
@@ -204,6 +208,8 @@ mapEvent5.addToMap(map);
 mapEvent6.addToMap(map);
 mapEvent7.addToMap(map);
 
+*/
+
 function showEventDetails(event) {
     const sidebar = document.getElementById('sidebar');
     const content = document.getElementById('event-content');
@@ -224,16 +230,28 @@ function toggleTheme() {
     currentThemeIndex = (currentThemeIndex + 1) % themeStyles.length;
     map.setStyle(themeStyles[currentThemeIndex].url);
 
-    // Button-Text auf den übernächsten Style setzen
+    // Button-Text auf den jetzigen Style setzen
     const btn = document.getElementById('theme-toggle');
-    const nextName = themeStyles[(currentThemeIndex + 1) % themeStyles.length].name;
-    btn.innerHTML = `<h3>${nextName}</h3>`;
+    const currentName = themeStyles[currentThemeIndex % themeStyles.length].name;
+    btn.innerHTML = `<h3>${currentName}</h3>`;
 }
 
 // Filter- und Legend-Toggle
 function toggleFiltersMenu() {
     document.getElementById('filters-menu').classList.toggle('active');
 }
+function updateFilter(checkbox){
+    const filterType = checkbox.value;
+    const isChecked = checkbox.checked;
+
+    document.querySelectorAll('.map-marker').forEach(marker => {
+        console.log(marker.type, filterType, isChecked);
+        if (marker.type === filterType) {
+            marker.style.display = isChecked ? 'block' : 'none';
+        }
+    })
+}
+
 function toggleLegendMenu() {
     document.getElementById('legend-menu').classList.toggle('active');
 }
@@ -273,6 +291,7 @@ function addLatestEvent(type, date, location, lat, lng, description) {
         console.error('Latest Events Content element not found!');
     }
 }
+
 // Add ScaleControl to the map
 const scale = new mapboxgl.ScaleControl({
     maxWidth: 100, // Maximale Breite des Maßstabs

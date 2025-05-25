@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hamburg Event Map</title>
+    <title>Hamburg Unfallkarte</title>
 
     <!-- CSS laden -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -17,11 +17,11 @@
 <body>
     <div id="top-bar">
         <div class="button-group">
-            <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filters</h3></button>
-            <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legend</h3></button>
-            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Dark Mode</h3></button>
+            <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filter</h3></button>
+            <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legende</h3></button>
+            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Standard</h3></button>
             <select id="district-select" class="nav-button" onchange="flyToDistrict()">
-                <option value="">Select District...</option>
+                <option value="">Wähle ein Bezirk</option>
                 <optgroup label="Eimsbüttel">
                     <option value="Eimsbüttel-Schanzenviertel">Schanzenviertel</option>
                     <option value="Eimsbüttel-Hoheluft-West">Hoheluft-West</option>
@@ -54,15 +54,15 @@
     <!-- Filters Menu -->
     <div id="filters-menu" class="slide-menu">
         <div class="menu-header">
-            <h2>Filters</h2>
+            <h2>Filter</h2>
             <button class="close-btn" onclick="toggleFiltersMenu()">✕</button>
         </div>
         <form id="filter-form">
             <label>
-                <input type="checkbox" name="type" value="Accident"> Accident
+                <input type="checkbox" name="type" value="UNFALL" checked onchange="updateFilter(this)"> Unfälle
             </label>
             <label>
-                <input type="checkbox" name="type" value="AuthorityOperation"> Authority Operation
+                <input type="checkbox" name="type" value="AuthorityOperation" checked onchange="updateFilter(this)"> Behördliche Einsätze
             </label>
         </form>
     </div>
@@ -70,12 +70,12 @@
     <!-- Legend Menu -->
     <div id="legend-menu" class="slide-menu">
         <div class="menu-header">
-            <h2>Legend</h2>
+            <h2>Legende</h2>
             <button class="close-btn" onclick="toggleLegendMenu()">✕</button>
         </div>
         <ul>
-            <li><strong>Accident:</strong> Traffic accidents.</li>
-            <li><strong>AuthorityOperation:</strong> Operations by authorities (e.g., fire department).</li>
+            <li><strong>Unfall:</strong> Autounfälle.</li>
+            <li><strong>Behördliche Einsätze:</strong> Einsätze, die von Behörden ausgeführt werden (z.B., Feuerwehreinsatz).</li>
         </ul>
     </div>
 
@@ -91,35 +91,35 @@
         <!-- Latest Events Sidebar -->
     <div id="latest-events-sidebar" class="slide-menu">
         <div class="menu-header">
-            <h2>Latest Events</h2>
+            <h2>Letzte Ereignisse</h2>
             <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
         </div>
         <div id="latest-events-content">
-            <p>No events yet.</p>
+            <p>Keine Ereignisse vorhanden.</p>
         </div>
     </div>
     
     <div id="latest-events-sidebar" class="slide-menu">
         <div class="menu-header">
-            <h2>Latest Events</h2>
+            <h2>Letzte Ereignisse</h2>
             <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
         </div>
         <div id="latest-events-content">
-            <p>No events yet.</p>
+            <p>Keien Ereignisse vorhanden.</p>
         </div>
     </div>
 
         <!-- Sidebar -->
     <div id="sidebar">
         <div class="close-btn" onclick="toggleSidebar()">✕</div>
-        <h2>Event Details</h2>
+        <h2>Details zu Ereignissen</h2>
         <div id="event-content">
-            <p>Select an event to see details here.</p>
+            <p>Wähle eine Ereignis aus, um Details zu sehen.</p>
         </div>
     </div>
 
         <!-- Button to Open the Latest Events Sidebar -->
-    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
+    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Letzte Ereignisse</button>
 
     <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
