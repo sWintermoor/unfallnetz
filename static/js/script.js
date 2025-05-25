@@ -239,6 +239,25 @@ function toggleTheme() {
 function toggleFiltersMenu() {
     document.getElementById('filters-menu').classList.toggle('active');
 }
+function updateFilter(checkbox){
+    if(checkbox.value == "Accident"){
+        if(checkbox.checked){
+            console.log("Accident filter enabled");
+        }
+        else {
+            console.log("Accident filter disabled");
+        }
+    }
+    else if(checkbox.value == "AuthorityOperation"){
+        if(checkbox.checked){
+            console.log("Authority Operation filter enabled");
+        }
+        else {
+            console.log("Authority Operation filter disabled");
+        }
+    }
+}
+
 function toggleLegendMenu() {
     document.getElementById('legend-menu').classList.toggle('active');
 }
@@ -278,6 +297,7 @@ function addLatestEvent(type, date, location, lat, lng, description) {
         console.error('Latest Events Content element not found!');
     }
 }
+
 // Add ScaleControl to the map
 const scale = new mapboxgl.ScaleControl({
     maxWidth: 100, // Maximale Breite des Maßstabs
