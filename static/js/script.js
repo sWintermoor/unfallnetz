@@ -230,10 +230,10 @@ function toggleTheme() {
     currentThemeIndex = (currentThemeIndex + 1) % themeStyles.length;
     map.setStyle(themeStyles[currentThemeIndex].url);
 
-    // Button-Text auf den übernächsten Style setzen
+    // Button-Text auf den jetzigen Style setzen
     const btn = document.getElementById('theme-toggle');
-    const nextName = themeStyles[(currentThemeIndex + 1) % themeStyles.length].name;
-    btn.innerHTML = `<h3>${nextName}</h3>`;
+    const currentName = themeStyles[currentThemeIndex % themeStyles.length].name;
+    btn.innerHTML = `<h3>${currentName}</h3>`;
 }
 
 // Filter- und Legend-Toggle
