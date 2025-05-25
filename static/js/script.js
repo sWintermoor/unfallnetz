@@ -137,6 +137,9 @@ socket.on('disconnect', () => {
     console.log('Verbindung zum Server getrennt')
 })
 
+// Dummy Werte
+
+/*
 const mapEvent1 = new MapEvent(
     'Accident',
     '2024-11-20 13:08:00',
@@ -203,6 +206,8 @@ mapEvent4.addToMap(map);
 mapEvent5.addToMap(map);
 mapEvent6.addToMap(map);
 mapEvent7.addToMap(map);
+
+*/
 
 function showEventDetails(event) {
     const sidebar = document.getElementById('sidebar');
