@@ -15,6 +15,21 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
+    <div id="map" style="position: absolute; top:0; bottom:0; right:0; left:0;"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-heat/dist/leaflet-heat.js"></script>
+<script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
+
+<!-- Legende -->
+<div id="legende" style="position:absolute; top:10px; right:10px; background:white; padding:8px; border-radius:4px; font-family:sans-serif; font-size:14px;">
+  <strong>Gefahrenstufen</strong><br>
+  <i style="background:green;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>0 – keine Gefahr<br>
+  <i style="background:yellow;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>1 – Baustelle│Verkehr│Unfall<br>
+  <i style="background:red;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>2 – Kombination / typische Unfallzone
+</div>
+
     <div id="top-bar">
         <div class="button-group">
             <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filter</h3></button>
