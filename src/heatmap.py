@@ -1,6 +1,28 @@
 # src/heatmap.py
 from flask import current_app as app, jsonify
 from .database import get_unfaelle, get_baustellen, get_verkehrsdaten, get_historie
+# src/heatmap.py
+from flask import jsonify
+
+def register_heatmap_routes(app):
+
+    @app.route('/api/heatmap')
+    def heatmap_api():
+        # TODO: hier später echte DB-Abfragen einbauen
+        return jsonify({
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": { "gefahrenstufe": 2 },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [9.9937, 53.5511]  # Beispiel: Hamburg
+                    }
+                }
+            ]
+        })
+
 
 # Schwellwerte (anpassen nach Bedarf)
 VERKEHRSSCHWELLE = 1000    # Fahrzeuge/Tag
