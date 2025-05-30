@@ -1,24 +1,44 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const map = L.map('map').setView([53.5511, 9.9937], 12);
-  
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-  
-    fetch('/api/heatmap')
-      .then(res => res.json())
-      .then(json => {
-        const points = json.features.map(f => {
-          const [lon, lat] = f.geometry.coordinates;
-          const stufe = f.properties.gefahrenstufe;
-          const w = stufe === 2 ? 1 : stufe === 1 ? 0.5 : 0;
-          return [lat, lon, w];
+// static/js/heatmap.js
+
+// Karte initialisieren und auf Hamburg zentrieren
+const map = L.map('map').setView([53.5511, 9.9937], 12);
+
+// Basiskarte von OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap-Mitwirkende'
+}).addTo(map);
+
+// GeoJSON-Daten vom Flask-Server holen und als Layer hinzufügen
+fetch('/api/heatmap')
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(geojson => {
+    // Punkt-Layer mit gefärbten Markern
+    L.geoJSON(geojson, {
+      pointToLayer: (feature, latlng) => {
+        const level = feature.properties.gefahrenstufe;
+        let color;
+        switch (level) {
+          case 0: color = '#00ff00'; break; // Grün
+          case 1: color = '#ffff00'; break; // Gelb
+          case 2: color = '#ff0000'; break; // Rot
+          default: color = '#0000ff';      // Blau (Fallback)
+        }
+        return L.circleMarker(latlng, {
+          radius: 6,
+          fillColor: color,
+          color: '#333',
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
         });
-        L.heatLayer(points, {
-          radius: 25,
-          gradient: { 0.0: 'green', 0.5: 'yellow', 1.0: 'red' }
-        }).addTo(map);
-      })
-      .catch(console.error);
+      }
+    }).addTo(map);
+  })
+  .catch(err => {
+    console.error('Fehler beim Laden der Heatmap-Daten:', err);
   });
-  

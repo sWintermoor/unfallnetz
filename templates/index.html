@@ -1,142 +1,35 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hamburg Unfallkarte</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hamburg Unfallkarte</title>
 
-    <!-- CSS laden -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet" />
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    integrity="sha256-sA+qkP1gyjeyQUJfYbHvuNQhxlkHw5iqCgnY3w8Yt2Q="
+    crossorigin=""
+  />
 
-    <!-- JavaScript-Bibliotheken -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    /* Vollflächige Karte */
+    #map { height: 100vh; margin: 0; padding: 0; }
+  </style>
 </head>
 <body>
-    <div id="map" style="position: absolute; top:0; bottom:0; right:0; left:0;"></div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-heat/dist/leaflet-heat.js"></script>
-<script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
+  <div id="map"></div>
 
-<!-- Legende -->
-<div id="legende" style="position:absolute; top:10px; right:10px; background:white; padding:8px; border-radius:4px; font-family:sans-serif; font-size:14px;">
-  <strong>Gefahrenstufen</strong><br>
-  <i style="background:green;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>0 – keine Gefahr<br>
-  <i style="background:yellow;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>1 – Baustelle│Verkehr│Unfall<br>
-  <i style="background:red;width:18px;height:18px;display:inline-block;opacity:0.7;margin-right:6px;"></i>2 – Kombination / typische Unfallzone
-</div>
-
-    <div id="top-bar">
-        <div class="button-group">
-            <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filter</h3></button>
-            <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legende</h3></button>
-            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Standard</h3></button>
-            <select id="district-select" class="nav-button" onchange="flyToDistrict()">
-                <option value="">Wähle ein Bezirk</option>
-                <optgroup label="Eimsbüttel">
-                    <option value="Eimsbüttel-Schanzenviertel">Schanzenviertel</option>
-                    <option value="Eimsbüttel-Hoheluft-West">Hoheluft-West</option>
-                    <option value="Eimsbüttel-Eppendorf">Eppendorf</option>
-                </optgroup>
-                <optgroup label="Altona">
-                    <option value="Altona-Ottensen">Ottensen</option>
-                    <option value="Altona-Altona-Altstadt">Altona-Altstadt</option>
-                    <option value="Altona-Bahrenfeld">Bahrenfeld</option>
-                </optgroup>
-                <optgroup label="Hamburg-Mitte">
-                    <option value="Hamburg-Mitte-St. Pauli">St. Pauli</option>
-                    <option value="Hamburg-Mitte-HafenCity">HafenCity</option>
-                    <option value="Hamburg-Mitte-Altstadt">Altstadt</option>
-                </optgroup>
-            </select>
-        </div>
-        <div class="title-container">
-            <h1 class="title-right">Unfälle</h1>
-            <a href="https://www.uni-hamburg.de"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/UHH_Universität_Hamburg_Logo.svg/600px-UHH_Universität_Hamburg_Logo.svg.png" alt="Universität Hamburg Logo" class="uhh-logo"></a>
-        </div>
-    </div>
-
-    <!-- Map Container -->
-    <div id="map-container">
-        <div id="map"></div>
-        <div id="sidebar-toggle" onclick="toggleSidebar()"></div>
-    </div>
-
-    <!-- Filters Menu -->
-    <div id="filters-menu" class="slide-menu">
-        <div class="menu-header">
-            <h2>Filter</h2>
-            <button class="close-btn" onclick="toggleFiltersMenu()">✕</button>
-        </div>
-        <form id="filter-form">
-            <label>
-                <input type="checkbox" name="type" value="UNFALL" checked onchange="updateFilter(this)"> Unfälle
-            </label>
-            <label>
-                <input type="checkbox" name="type" value="AuthorityOperation" checked onchange="updateFilter(this)"> Behördliche Einsätze
-            </label>
-        </form>
-    </div>
-
-    <!-- Legend Menu -->
-    <div id="legend-menu" class="slide-menu">
-        <div class="menu-header">
-            <h2>Legende</h2>
-            <button class="close-btn" onclick="toggleLegendMenu()">✕</button>
-        </div>
-        <ul>
-            <li><strong>Unfall:</strong> Autounfälle.</li>
-            <li><strong>Behördliche Einsätze:</strong> Einsätze, die von Behörden ausgeführt werden (z.B., Feuerwehreinsatz).</li>
-        </ul>
-    </div>
-
-    <!-- Sidebar für neueste Events -->
-    <div id="latest-events-sidebar">
-        <div class="close-btn" onclick="toggleLatestEventsSidebar()">✕</div>
-        <h2>Latest Events</h2>
-        <div id="latest-events-content">
-            <p>No events yet.</p>
-        </div>
-    </div>
-
-        <!-- Latest Events Sidebar -->
-    <div id="latest-events-sidebar" class="slide-menu">
-        <div class="menu-header">
-            <h2>Letzte Ereignisse</h2>
-            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
-        </div>
-        <div id="latest-events-content">
-            <p>Keine Ereignisse vorhanden.</p>
-        </div>
-    </div>
-    
-    <div id="latest-events-sidebar" class="slide-menu">
-        <div class="menu-header">
-            <h2>Letzte Ereignisse</h2>
-            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
-        </div>
-        <div id="latest-events-content">
-            <p>Keien Ereignisse vorhanden.</p>
-        </div>
-    </div>
-
-        <!-- Sidebar -->
-    <div id="sidebar">
-        <div class="close-btn" onclick="toggleSidebar()">✕</div>
-        <h2>Details zu Ereignissen</h2>
-        <div id="event-content">
-            <p>Wähle eine Ereignis aus, um Details zu sehen.</p>
-        </div>
-    </div>
-
-        <!-- Button to Open the Latest Events Sidebar -->
-    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Letzte Ereignisse</button>
-
-    <!-- Eigenes JavaScript -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+    integrity="sha256-VxPJpNhgcRRBz6r+gNyT0x6RmOUhwybCT8t0uYK0/nY="
+    crossorigin=""
+  ></script>
+  
+  <!-- Deine Heatmap-Logik -->
+  <script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
 </body>
 </html>
