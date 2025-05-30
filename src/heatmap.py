@@ -11,7 +11,7 @@ def register_heatmap_routes(app):
                     "properties": {"gefahrenstufe": 2},
                     "geometry": {
                         "type": "Point",
-                        "coordinates": [9.9937, 53.5511]  # Beispielkoordinaten Hamburg
+                        "coordinates": [9.9937, 53.5511]
                     }
                 }
             ]
