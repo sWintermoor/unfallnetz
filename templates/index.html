@@ -9,27 +9,27 @@
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-    integrity="sha256-sA+qkP1gyjeyQUJfYbHvuNQhxlkHw5iqCgnY3w8Yt2Q="
-    crossorigin=""
   />
 
   <style>
-    /* Vollflächige Karte */
-    #map { height: 100vh; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      height: 100%;
+    }
   </style>
 </head>
 <body>
-
   <div id="map"></div>
 
   <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-    integrity="sha256-VxPJpNhgcRRBz6r+gNyT0x6RmOUhwybCT8t0uYK0/nY="
-    crossorigin=""
-  ></script>
-  
-  <!-- Deine Heatmap-Logik -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- Leaflet.heat Plugin -->
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <!-- eigenes Heatmap-Skript -->
   <script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
 </body>
 </html>
