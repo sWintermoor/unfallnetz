@@ -41,7 +41,7 @@ async def main():
 
     # Hintergrund-Aufgaben starten: SocketIO-Server und Updater
     socketio_task = asyncio.to_thread(
-        lambda: socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        lambda: socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=False)
     )
     update_task = asyncio.create_task(update_system(url, collection_handler, socketio))
     await asyncio.gather(socketio_task, update_task)
