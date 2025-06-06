@@ -21,6 +21,7 @@ def register_heatmap_routes(app, collection_handler):
             lon, lat = coords
             props = doc.get("properties", {})
             level = props.get("severity") or props.get("gefahrenstufe") or 1
+            status = props.get("status", [])
 
             features.append({
                 "type": "Feature",
@@ -28,7 +29,8 @@ def register_heatmap_routes(app, collection_handler):
                 "geometry": {
                     "type": "Point",
                     "coordinates": [lon, lat]
-                }
+                },
+                "status": status
             })
 
         return jsonify({

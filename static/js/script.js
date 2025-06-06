@@ -3,7 +3,8 @@
 // 1. Globaler Zustand und Konstanten
 const AppState = {
     themes: [
-      { name: 'Standard', url: 'mapbox://styles/mapbox/streets-v11' },
+      { name: 'Standard', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json'  },
+      { name: 'Alternative', url: 'mapbox://styles/mapbox/streets-v11' },
       { name: 'Dark', url: 'mapbox://styles/mapbox/dark-v10' },
       { name: 'Light', url: 'mapbox://styles/mapbox/light-v10' }
     ],
