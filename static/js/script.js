@@ -246,6 +246,14 @@ function toggleModeChange() {
     currentModeIndex = (currentModeIndex + 1) % modeStyles.length;
     const btn = document.getElementById('mode-toggle');
     const currentMode = modeStyles[currentModeIndex].name;
+
+    if (currentMode === 'Punkte') {
+        // Setze die Marker auf der Karte
+    }
+    else if (currentMode === 'Heatmap') {
+        
+    }
+
     btn.innerHTML = `<h3>${currentMode}</h3>`;
 }
 
