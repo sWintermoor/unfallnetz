@@ -237,7 +237,7 @@ const AppState = {
     document.getElementById('mode-toggle').innerHTML =
       `<h3>${AppState.modes[AppState.currentMode]}</h3>`;
   }
-  
+
   // 10. Sidebar- und Filter-Funktionen
   function showEventDetails(event) {
     const sidebar = document.getElementById('sidebar');
@@ -252,6 +252,8 @@ const AppState = {
     `;
     sidebar?.classList.add('active');
   }
+
+
   
   function updateFilter(checkbox) {
     const filterType = checkbox.value;
@@ -262,6 +264,16 @@ const AppState = {
       }
     });
   }
+
+  function toggleFiltersMenu() {
+    document.getElementById('filters-menu').classList.toggle('active');
+  }
+
+
+  function toggleLegendMenu() {
+    document.getElementById('legend-menu').classList.toggle('active');
+  }
+
   
   function addLatestEvent(type, date, location, lat, lng, description) {
     const content = document.getElementById('latest-events-content');
