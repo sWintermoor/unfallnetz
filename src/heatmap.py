@@ -2,6 +2,8 @@
 
 from flask import jsonify, current_app
 
+# TODO: Überprüfen, ob der Code nicht zu routes gehört.
+
 def register_heatmap_routes(app, collection_handler):
     @app.route('/api/heatmap')
     def heatmap_api():

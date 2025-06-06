@@ -16,6 +16,12 @@ const themeStyles = [
 ];
 let currentThemeIndex = 0; // Zeigt, welcher themeStyles-Eintrag als nächstes kommt
 
+const modeStyles = [
+    {name: 'Punkte'},
+    {name: 'Heatmap'}
+];
+let currentModeIndex = 0; // Zeigt, welcher Mode-Eintrag als nächstes kommt
+
 // Karte initialisieren mit dem Hamburg Custom Map Style
 const map = new mapboxgl.Map({
     container: 'map',
@@ -234,6 +240,13 @@ function toggleTheme() {
     const btn = document.getElementById('theme-toggle');
     const currentName = themeStyles[currentThemeIndex % themeStyles.length].name;
     btn.innerHTML = `<h3>${currentName}</h3>`;
+}
+
+function toggleModeChange() {
+    currentModeIndex = (currentModeIndex + 1) % modeStyles.length;
+    const btn = document.getElementById('mode-toggle');
+    const currentMode = modeStyles[currentModeIndex].name;
+    btn.innerHTML = `<h3>${currentMode}</h3>`;
 }
 
 // Filter- und Legend-Toggle
