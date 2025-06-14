@@ -1,35 +1,130 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hamburg Unfallkarte</title>
-
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
-
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    #map {
-      height: 100%;
-    }
-  </style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Hamburg Unfallkarte</title>
+    <!-- Leaflet CSS REMOVED -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> <!-- Socket.IO Client -->
 </head>
 <body>
-  <div id="map"></div>
+    <div id="top-bar">
+        <div class="button-group">
+            <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filters</h3></button>
+            <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legend</h3></button>
+            <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Standard</h3></button>
+            <select id="district-select" class="nav-button" onchange="flyToDistrict()">
+                <option value="">Select District...</option>
+                <optgroup label="Eimsbüttel">
+                    <option value="Eimsbüttel-Schanzenviertel">Schanzenviertel</option>
+                    <option value="Eimsbüttel-Hoheluft-West">Hoheluft-West</option>
+                    <option value="Eimsbüttel-Eppendorf">Eppendorf</option>
+                </optgroup>
+                <optgroup label="Altona">
+                    <option value="Altona-Ottensen">Ottensen</option>
+                    <option value="Altona-Altona-Altstadt">Altona-Altstadt</option>
+                    <option value="Altona-Bahrenfeld">Bahrenfeld</option>
+                </optgroup>
+                <optgroup label="Hamburg-Mitte">
+                    <option value="Hamburg-Mitte-St. Pauli">St. Pauli</option>
+                    <option value="Hamburg-Mitte-HafenCity">HafenCity</option>
+                    <option value="Hamburg-Mitte-Altstadt">Altstadt</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="title-container">
+            <h1 class="title-right">Unfälle</h1>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/UHH_Universität_Hamburg_Logo.svg/600px-UHH_Universität_Hamburg_Logo.svg.png" alt="Universität Hamburg Logo" class="uhh-logo">
+        </div>
+    </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <!-- Leaflet.heat Plugin -->
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-  <!-- eigenes Heatmap-Skript -->
-  <script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="close-btn" onclick="toggleSidebar()">✕</div>
+        <h2>Event Details</h2>
+        <div id="event-content">
+            <p>Select an event to see details here.</p>
+        </div>
+    </div>
+
+    <!-- Filters Menu -->
+    <div id="filters-menu" class="slide-menu">
+        <div class="menu-header">
+            <h2>Filters</h2>
+            <button class="close-btn" onclick="toggleFiltersMenu()">✕</button>
+        </div>
+        <form id="filter-form" style="padding: 20px;">
+            <label for="filter-start-date" style="display: block; margin-bottom: 5px; font-weight: bold;">Start Date:</label>
+            <input type="date" id="filter-start-date" name="filter-start-date" style="width: calc(100% - 22px); padding: 8px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+
+            <label for="filter-end-date" style="display: block; margin-bottom: 5px; font-weight: bold;">End Date:</label>
+            <input type="date" id="filter-end-date" name="filter-end-date" style="width: calc(100% - 22px); padding: 8px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+        </form>
+    </div>
+
+    <!-- Legend Menu -->
+    <div id="legend-menu" class="slide-menu">
+        <div class="menu-header">
+            <h2>Legend</h2>
+            <button class="close-btn" onclick="toggleLegendMenu()">✕</button>
+        </div>
+        <div style="padding: 20px;">
+            <h4>Date Filter:</h4>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
+                Use the 'Start Date' and 'End Date' selectors in the 'Filters' menu to display events that occurred within a specific time period.
+            </p>
+
+            <hr style="margin: 20px 0;">
+
+            <h4>Marker Appearance (by Age):</h4>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Markers change color and transparency based on how old the event is.</p>
+            <ul style="list-style-type: none; padding-left: 0;">
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(0, 255, 0); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Today / Future:</strong> Bright Green (Full Opacity)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(0, 255, 0), rgb(255, 255, 0)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Up to 1 Week Old:</strong> Green to Yellow (Opacity: 0.9)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(255, 255, 0), rgb(255, 0, 0)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>1 to 2 Weeks Old:</strong> Yellow to Red (Opacity: 0.8)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(255, 0, 0), rgb(128, 128, 128)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>2 Weeks to 1 Month Old:</strong> Red to Grey (Opacity: 0.65)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(200, 200, 200); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Older than 1 Month:</strong> Light Grey (Opacity: 0.5)</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Latest Events Sidebar -->
+    <div id="latest-events-sidebar">
+        <div class="menu-header">
+            <h2>Latest Events</h2>
+            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
+        </div>
+        <div id="latest-events-content">
+            <p>No events yet.</p>
+        </div>
+    </div>
+    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Latest Events</button>
+
+    <!-- Leaflet JS REMOVED -->
+    <!-- Leaflet.heat Plugin REMOVED -->
+    <!-- eigenes Heatmap-Skript REMOVED -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
