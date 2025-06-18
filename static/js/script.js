@@ -13,7 +13,33 @@ const AppState = {
     modes: ['Punkte', 'Heatmap'],
     currentMode: 0,
   
-    markers: [],
+    events: {
+      markers:[],
+      features: [],
+      
+      addEvent(data) {
+        const event = new MapEvent(data);
+        event.addToMap(map);
+
+        // GeoJSON Feature erstellen
+        if (!window.geoJsonData) {
+            window.geoJsonData = {
+              type: 'FeatureCollection',
+              features: []
+          };
+        }
+
+        window.geoJsonData.features.push(data);
+
+        // Wenn Heatmap aktiv ist, Layer aktualisieren
+        if (AppState.modes[AppState.currentMode] === 'Heatmap') {
+            const source = map.getSource(AppState.heat.sourceId);
+            if (source) {
+                source.setData(window.geoJsonData);
+            }
+        }
+      },
+    },
   
     heat: {
       sourceId: 'heatmap-data',
@@ -182,7 +208,7 @@ const AppState = {
         this.coordinates[0], // lng
         this.description
       );
-      AppState.markers.push(this.marker);
+      AppState.events.markers.push(this.marker);
     }
   }
   
@@ -191,26 +217,7 @@ const AppState = {
   socket.on('connect', () => console.log('Verbunden mit Server'));
   socket.on('disconnect', () => console.log('Verbindung getrennt'));
   socket.on('EventCreated', (data) => {
-
-    const event = new MapEvent(data);
-    event.addToMap(map);
-
-    if (!window.geoJsonData) {
-        window.geoJsonData = {
-            type: 'FeatureCollection',
-            features: []
-        };
-    }
-    
-    window.geoJsonData.features.push(data);
-
-    // Wenn Heatmap aktiv ist, Layer aktualisieren
-    if (AppState.modes[AppState.currentMode] === 'Heatmap') {
-        const source = map.getSource(AppState.heat.sourceId);
-        if (source) {
-            source.setData(window.geoJsonData);
-        }
-    }
+    AppState.events.addEvent(data);
   });
   
   // 7. Heatmap-Daten laden
@@ -239,7 +246,7 @@ const AppState = {
     switchTo('currentMode', 'modes', (newIndex) => {
       const currentMode = AppState.modes[newIndex];
       if (currentMode === 'Heatmap') {
-        AppState.markers.forEach(m => m.remove());
+        AppState.events.markers.forEach(m => m.remove());
         loadHeatmapData();
       } else {
         if (map.getLayer(AppState.heat.layerId)) {
@@ -248,7 +255,7 @@ const AppState = {
         if (map.getSource(AppState.heat.sourceId)) {
           map.removeSource(AppState.heat.sourceId);
         }
-        AppState.markers.forEach(m => m.addTo(map));
+        AppState.events.markers.forEach(m => m.addTo(map));
       }
     });
     document.getElementById('mode-toggle').innerHTML =
