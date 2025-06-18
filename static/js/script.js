@@ -19,7 +19,7 @@ const AppState = {
       
       addEvent(data) {
         const event = new MapEvent(data);
-        event.addToMap(map);
+        event.addToMap(map); 
 
         // GeoJSON Feature erstellen
         if (!window.geoJsonData) {
@@ -31,13 +31,47 @@ const AppState = {
 
         window.geoJsonData.features.push(data);
 
-        // Wenn Heatmap aktiv ist, Layer aktualisieren
-        if (AppState.modes[AppState.currentMode] === 'Heatmap') {
-            const source = map.getSource(AppState.heat.sourceId);
-            if (source) {
-                source.setData(window.geoJsonData);
-            }
-        }
+        loadCorrectData(AppState.modes[AppState.currentMode]);
+      },
+
+      // Events filtern
+      filterByType(filterType, visible) {
+
+          if(AppState.modes[AppState.currentMode] === 'Punkte') {
+            console.log('Punkte-Filter:');
+            this.markers.forEach(marker => {
+                if(marker.getElement().type === filterType){
+                  visible ? marker.addTo(map) : marker.remove();
+                }
+            });
+          }
+          
+          // GeoJSON Features filtern für Heatmap
+          if (AppState.modes[AppState.currentMode] === 'Heatmap') {
+              console.log('Heatmap-Filter, visibility:', visible, 'filterType:', filterType, 'features:', this.features);
+              console.log('GeoJSON Data:', window.geoJsonData.features);
+
+              if (visible) {
+                console.log('Hinzufügen von Features für Filter:', filterType);
+                this.features = this.features.concat(window.geoJsonData.features.filter(f => f.properties.name === filterType));
+              }
+              else {
+                this.features = this.features.filter(f => f.properties.name !== filterType);
+              }
+              console.log('Gefilterte Features:', this.features);
+
+              const source = map.getSource(AppState.heat.sourceId);
+              if (source) {
+                  console.log('source', source);                      
+                  source.setData({
+                      type: 'FeatureCollection',
+                      features: this.features
+                  });
+              }
+              else{
+                initializeHeatMapLayer(map, this.features);
+              }
+          }
       },
     },
   
@@ -110,35 +144,38 @@ const AppState = {
   }
   
   // 3.4 Heatmap-Layer laden oder aktualisieren
-  function ensureHeatmapLayer(map) {
+  function initializeHeatMapLayer(map, geoJsonDataInput) {
+    const { sourceId, layerId } = AppState.heat;
+    map.addSource(sourceId, { type: 'geojson', data: geoJsonDataInput });
+    map.addLayer({
+      id: layerId,
+      type: 'heatmap',
+      source: sourceId,
+      maxzoom: 17,
+      paint: {
+        'heatmap-weight': ['get', 'gefahrenstufe'],
+        'heatmap-intensity': 1,
+        'heatmap-radius': 25,
+        'heatmap-opacity': 0.6,
+        'heatmap-color': [
+          'interpolate',
+          ['linear'],
+          ['heatmap-density'],
+          0, 'rgba(0, 0, 255, 0)',
+          0.2, 'blue',
+          0.4, 'lime',
+          0.6, 'yellow',
+          0.8, 'orange',
+          1, 'red'
+        ]
+      }
+    });
+  }
+
+  function loadHeatmapLayer(map, geoJsonDataInput) {
     const { sourceId, layerId } = AppState.heat;
     if (map.getSource(sourceId)) {
-      map.getSource(sourceId).setData(window.geoJsonData);
-    } else {
-      map.addSource(sourceId, { type: 'geojson', data: window.geoJsonData });
-      map.addLayer({
-        id: layerId,
-        type: 'heatmap',
-        source: sourceId,
-        maxzoom: 17,
-        paint: {
-          'heatmap-weight': ['get', 'gefahrenstufe'],
-          'heatmap-intensity': 1,
-          'heatmap-radius': 25,
-          'heatmap-opacity': 0.6,
-          'heatmap-color': [
-            'interpolate',
-            ['linear'],
-            ['heatmap-density'],
-            0, 'rgba(0, 0, 255, 0)',
-            0.2, 'blue',
-            0.4, 'lime',
-            0.6, 'yellow',
-            0.8, 'orange',
-            1, 'red'
-          ]
-        }
-      });
+      map.getSource(sourceId).setData(geoJsonDataInput);
     }
   }
   
@@ -220,32 +257,44 @@ const AppState = {
     AppState.events.addEvent(data);
   });
   
-  // 7. Heatmap-Daten laden
-  function loadHeatmapData() {
-    ensureHeatmapLayer(map);
-  }
-  
   // 8. Theme-Wechsel
   function toggleTheme() {
     switchTo('currentTheme', 'themes', (newIndex) => {
       map.setStyle(AppState.themes[newIndex].url);
       map.once('style.load', () => {
-        if (AppState.modes[AppState.currentMode] === 'Heatmap') {
-          loadHeatmapData();
-        } else {
-          AppState.markers.forEach(m => m.addTo(map));
-        }
+        loadCorrectData(AppState.modes[AppState.currentMode]);
       });
     });
     document.getElementById('theme-toggle').innerHTML =
       `<h3>${AppState.themes[AppState.currentTheme].name}</h3>`;
+  }
+
+  function loadCorrectData(currentMode){
+    AppState.events.features = window.geoJsonData.features;
+    console.log('Features auf neustem Stand:', AppState.events.features);
+    if (currentMode === 'Heatmap') {
+        AppState.events.markers.forEach(m => m.remove());
+    }
+    else{
+      if (map.getLayer(AppState.heat.layerId)) {
+        map.removeLayer(AppState.heat.layerId);
+      }
+      if (map.getSource(AppState.heat.sourceId)) {
+        map.removeSource(AppState.heat.sourceId);
+      }
+    }
+    document.querySelector('#filters-menu').querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      console.log('Checkbox:', checkbox.value, checkbox.checked);
+      checkFilters(checkbox);
+    });
   }
   
   // 9. Moduswechsel zwischen Punkten und Heatmap
   function toggleModeChange() {
     switchTo('currentMode', 'modes', (newIndex) => {
       const currentMode = AppState.modes[newIndex];
-      if (currentMode === 'Heatmap') {
+      loadCorrectData(currentMode);
+      /* if (currentMode === 'Heatmap') {
         AppState.events.markers.forEach(m => m.remove());
         loadHeatmapData();
       } else {
@@ -256,7 +305,7 @@ const AppState = {
           map.removeSource(AppState.heat.sourceId);
         }
         AppState.events.markers.forEach(m => m.addTo(map));
-      }
+      } */
     });
     document.getElementById('mode-toggle').innerHTML =
       `<h3>${AppState.modes[AppState.currentMode]}</h3>`;
@@ -279,14 +328,10 @@ const AppState = {
 
 
   
-  function updateFilter(checkbox) {
+  function checkFilters(checkbox) {
     const filterType = checkbox.value;
     const isChecked = checkbox.checked;
-    document.querySelectorAll('.map-marker').forEach(markerEl => {
-      if (markerEl.type === filterType) {
-        markerEl.style.display = isChecked ? 'block' : 'none';
-      }
-    });
+    AppState.events.filterByType(filterType, isChecked);
   }
 
   function toggleFiltersMenu() {
