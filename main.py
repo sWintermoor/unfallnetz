@@ -2,7 +2,6 @@
 
 from flask import Flask
 from flask_socketio import SocketIO
-from src.heatmap import register_heatmap_routes
 import asyncio
 
 from src import CollectionHandler
@@ -19,9 +18,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # CollectionHandler instanziieren und auf app speichern
 collection_handler = CollectionHandler()
 app.collection_handler = collection_handler
-
-# Heatmap-Routen anmelden (mit collection_handler)
-register_heatmap_routes(app, collection_handler)
 
 # Standard- und Websocket-Routen registrieren
 register_routes(app)

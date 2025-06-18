@@ -84,12 +84,12 @@ const AppState = {
   }
   
   // 3.4 Heatmap-Layer laden oder aktualisieren
-  function ensureHeatmapLayer(map, geojson) {
+  function ensureHeatmapLayer(map) {
     const { sourceId, layerId } = AppState.heat;
     if (map.getSource(sourceId)) {
-      map.getSource(sourceId).setData(geojson);
+      map.getSource(sourceId).setData(window.geoJsonData);
     } else {
-      map.addSource(sourceId, { type: 'geojson', data: geojson });
+      map.addSource(sourceId, { type: 'geojson', data: window.geoJsonData });
       map.addLayer({
         id: layerId,
         type: 'heatmap',
@@ -150,11 +150,12 @@ const AppState = {
   // 5. Klasse für Events (Marker)
   class MapEvent {
     constructor(data) {
-      this.title = data.type;
-      this.date = new Date(data.date);
+      this.title = data.properties.name;
+      this.date = new Date(data.properties.date);
       this.location = data.location;
-      this.description = data.description;
-      this.coordinates = [data.lng, data.lat];
+      this.description = data.properties.description;
+      this.coordinates = [data.geometry.coordinates[0], data.geometry.coordinates[1]];
+      this.level = data.properties.value;
       this.marker = null;
     }
   
@@ -190,16 +191,31 @@ const AppState = {
   socket.on('connect', () => console.log('Verbunden mit Server'));
   socket.on('disconnect', () => console.log('Verbindung getrennt'));
   socket.on('EventCreated', (data) => {
+
     const event = new MapEvent(data);
     event.addToMap(map);
+
+    if (!window.geoJsonData) {
+        window.geoJsonData = {
+            type: 'FeatureCollection',
+            features: []
+        };
+    }
+    
+    window.geoJsonData.features.push(data);
+
+    // Wenn Heatmap aktiv ist, Layer aktualisieren
+    if (AppState.modes[AppState.currentMode] === 'Heatmap') {
+        const source = map.getSource(AppState.heat.sourceId);
+        if (source) {
+            source.setData(window.geoJsonData);
+        }
+    }
   });
   
   // 7. Heatmap-Daten laden
   function loadHeatmapData() {
-    fetch('/api/heatmap')
-      .then(res => res.json())
-      .then(geojson => ensureHeatmapLayer(map, geojson))
-      .catch(err => console.error('Heatmap konnte nicht geladen werden:', err));
+    ensureHeatmapLayer(map);
   }
   
   // 8. Theme-Wechsel
