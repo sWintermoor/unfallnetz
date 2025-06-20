@@ -6,7 +6,8 @@ const AppState = {
       { name: 'Standard', url: 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json'  },
       { name: 'Alternative', url: 'mapbox://styles/mapbox/streets-v11' },
       { name: 'Dark', url: 'mapbox://styles/mapbox/dark-v10' },
-      { name: 'Light', url: 'mapbox://styles/mapbox/light-v10' }
+      { name: 'Light', url: 'mapbox://styles/mapbox/light-v10' },
+
     ],
     currentTheme: 0,
   
@@ -257,18 +258,8 @@ const AppState = {
     AppState.events.addEvent(data);
   });
   
-  // 8. Theme-Wechsel
-  function toggleTheme() {
-    switchTo('currentTheme', 'themes', (newIndex) => {
-      map.setStyle(AppState.themes[newIndex].url);
-      map.once('style.load', () => {
-        loadCorrectData(AppState.modes[AppState.currentMode]);
-      });
-    });
-    document.getElementById('theme-toggle').innerHTML =
-      `<h3>${AppState.themes[AppState.currentTheme].name}</h3>`;
-  }
 
+  // 7. Daten richtig laden
   function loadCorrectData(currentMode){
     AppState.events.features = window.geoJsonData.features;
     console.log('Features auf neustem Stand:', AppState.events.features);
@@ -288,6 +279,21 @@ const AppState = {
       checkFilters(checkbox);
     });
   }
+
+
+  // 8. Theme-Wechsel
+  function toggleTheme() {
+    switchTo('currentTheme', 'themes', (newIndex) => {
+      map.setStyle(AppState.themes[newIndex].url);
+      map.once('style.load', () => {
+        loadCorrectData(AppState.modes[AppState.currentMode]);
+      });
+    });
+    document.getElementById('theme-toggle').innerHTML =
+      `<h3>${AppState.themes[AppState.currentTheme].name}</h3>`;
+  }
+
+  
   
   // 9. Moduswechsel zwischen Punkten und Heatmap
   function toggleModeChange() {
