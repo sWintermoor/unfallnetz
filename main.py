@@ -2,7 +2,6 @@
 
 from flask import Flask
 from flask_socketio import SocketIO
-from src.heatmap import register_heatmap_routes
 import asyncio
 
 from src import CollectionHandler
@@ -19,9 +18,6 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # CollectionHandler instanziieren und auf app speichern
 collection_handler = CollectionHandler()
 app.collection_handler = collection_handler
-
-# Heatmap-Routen anmelden (mit collection_handler)
-register_heatmap_routes(app, collection_handler)
 
 # Standard- und Websocket-Routen registrieren
 register_routes(app)
@@ -41,7 +37,7 @@ async def main():
 
     # Hintergrund-Aufgaben starten: SocketIO-Server und Updater
     socketio_task = asyncio.to_thread(
-        lambda: socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False)
+        lambda: socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=False)
     )
     update_task = asyncio.create_task(update_system(url, collection_handler, socketio))
     await asyncio.gather(socketio_task, update_task)

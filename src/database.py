@@ -52,13 +52,14 @@ def add_timestamp(documents):
             doc["timestamp"] = datetime.now()
     return documents
 
-
+"""
 def get_unfaelle(collection_handler):
-    """
-    Gibt alle Unfalldokumente als Liste von Dicts zurück.
-    """
+    
+    # Gibt alle Unfalldokumente als Liste von Dicts zurück.
+    
     coll = getattr(collection_handler, "collection", None)
     if coll is None:
         raise RuntimeError("Collection noch nicht initialisiert.")
     # Optional: hier schon filtern oder nur bestimmte Felder holen
     return list(coll.find({}))
+"""
