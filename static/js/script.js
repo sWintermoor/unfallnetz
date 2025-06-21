@@ -369,4 +369,10 @@ const AppState = {
     if (!select) return;
     UI.flyToDistrict(select.value);
     select.value = '';
-  } 
+  }
+
+  function toggleLatestEventsSidebar() {
+  const sidebar = document.getElementById('latest-events-sidebar');
+  if (!sidebar) return;
+  sidebar.classList.toggle('active');
+}
