@@ -15,10 +15,10 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
-    <div id="top-bar">
-        <div class="button-group">
+    <div id="top-bar">        <div class="button-group">
             <button class="nav-button" onclick="toggleFiltersMenu()"><h3>Filter</h3></button>
             <button class="nav-button" onclick="toggleLegendMenu()"><h3>Legende</h3></button>
+            <button class="nav-button" onclick="toggleStatsPanel()"><h3>Stats</h3></button>
             <button class="nav-button" id="theme-toggle" onclick="toggleTheme()"><h3>Standard</h3></button>
             <button class="nav-button" id="mode-toggle" onclick="toggleModeChange()"><h3>Punkte</h3></button>
             <select id="district-select" class="nav-button" onchange="flyToDistrict()">
@@ -104,11 +104,13 @@
                 Use the 'Start Date' and 'End Date' selectors in the 'Filters' menu to display events that occurred within a specific time period.
             </p>
 
-            <hr style="margin: 20px 0;">
-
-            <h4>Marker Appearance (by Age):</h4>
+            <hr style="margin: 20px 0;">            <h4>Marker Appearance (by Age):</h4>
             <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Markers change color and transparency based on how old the event is.</p>
             <ul style="list-style-type: none; padding-left: 0;">
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(0, 255, 0); border: 3px solid #0066ff; margin-right: 10px;"></span>
+                    <div><strong>3 Newest Events:</strong> Blue border highlight</div>
+                </li>
                 <li style="margin-bottom: 10px; display: flex; align-items: center;">
                     <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(0, 255, 0); border: 1px solid #ccc; margin-right: 10px;"></span>
                     <div><strong>Today / Future:</strong> Bright Green (Full Opacity)</div>
@@ -128,8 +130,96 @@
                 <li style="margin-bottom: 10px; display: flex; align-items: center;">
                     <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(200, 200, 200); border: 1px solid #ccc; margin-right: 10px;"></span>
                     <div><strong>Older than 1 Month:</strong> Light Grey (Opacity: 0.5)</div>
-                </li>
-            </ul>
+                </li>            </ul>
+        </div>
+    </div>    <!-- Stats Panel -->
+    <div id="stats-panel" class="slide-menu stats-panel">
+        <div class="menu-header">
+            <h2>Live Analytics</h2>
+            <button class="close-btn" onclick="toggleStatsPanel()">✕</button>
+        </div>
+        <div class="stats-content">
+            <div class="stats-section">
+                <h3>Live Status</h3>
+                <div class="stat-cards">
+                    <div class="stat-card live">
+                        <div class="stat-value" id="live-new-events">0</div>
+                        <div class="stat-label">Neue Events (1h)</div>
+                        <div class="stat-trend" id="live-trend">↗</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-visible">0</div>
+                        <div class="stat-label">Sichtbare Events</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="hotspot-count">0</div>
+                        <div class="stat-label">Hotspots erkannt</div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-section">
+                <h3>Zeitbasierte Analyse</h3>
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <div class="stat-value" id="today-events">0</div>
+                        <div class="stat-label">Heute</div>
+                        <div class="stat-trend" id="today-trend">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="week-events">0</div>
+                        <div class="stat-label">Diese Woche</div>
+                        <div class="stat-trend" id="week-trend">↗</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="month-events">0</div>
+                        <div class="stat-label">Dieser Monat</div>
+                        <div class="stat-trend" id="month-trend">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-section">
+                <h3>Event-Typen</h3>
+                <div class="distribution-chart" id="event-type-chart">
+                    <div class="chart-item">
+                        <div class="chart-bar" data-type="UNFALL">
+                            <div class="bar-fill" style="width: 0%; background: #ff4757;"></div>
+                        </div>
+                        <div class="chart-label">Unfälle (<span id="accident-count">0</span>)</div>
+                    </div>
+                    <div class="chart-item">
+                        <div class="chart-bar" data-type="AuthorityOperation">
+                            <div class="bar-fill" style="width: 0%; background: #3742fa;"></div>
+                        </div>
+                        <div class="chart-label">Behördliche Einsätze (<span id="authority-count">0</span>)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-section">
+                <h3>Advanced Analytics</h3>
+                <div class="advanced-stats">
+                    <div class="advanced-stat">
+                        <span class="stat-icon">⚡</span>
+                        <div class="stat-info">
+                            <div class="stat-title">Ereignisrate</div>
+                            <div class="stat-desc" id="event-rate">0 Events/Tag</div>
+                        </div>
+                    </div>
+                    <div class="advanced-stat">
+                        <span class="stat-icon">●</span>
+                        <div class="stat-info">
+                            <div class="stat-title">Hotspot-Faktor</div>
+                            <div class="stat-desc" id="hotspot-factor">Niedrig</div>
+                        </div>
+                    </div>
+                    <div class="advanced-stat">
+                        <span class="stat-icon">↗</span>
+                        <div class="stat-info">
+                            <div class="stat-title">Trend-Score</div>
+                            <div class="stat-desc" id="trend-score">+0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

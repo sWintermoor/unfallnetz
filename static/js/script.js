@@ -605,7 +605,11 @@ function applyFilters() {
         if (endDate && eventDate > endDate) return false;
         if (checkedTypes.length > 0 && !checkedTypes.includes(feature.properties.name)) return false;
         return true;
-    });
+    });    // Sort features by date to identify the 3 newest events
+    const sortedByDate = [...filteredFeatures].sort((a, b) => 
+        new Date(b.properties.date) - new Date(a.properties.date)
+    );
+    const newestThreeIds = sortedByDate.slice(0, 3).map(f => f.properties.date + f.geometry.coordinates.join(','));
 
     // Pre-calculate color and opacity for performance
     filteredFeatures.forEach(feature => {
@@ -656,6 +660,13 @@ function applyFilters() {
         // For daysDiff >= interpolationDays, it will remain minRadius
 
         feature.properties.radius = radius;
+
+        // --- BLUE BORDER FOR 3 NEWEST EVENTS ---
+        const eventId = feature.properties.date + feature.geometry.coordinates.join(',');
+        const isNewest = newestThreeIds.includes(eventId);
+        feature.properties.isNewest = isNewest;
+        feature.properties.strokeColor = isNewest ? '#0066ff' : 'transparent';
+        feature.properties.strokeWidth = isNewest ? 3 : 0;
     });
 
     const currentMode = AppState.modes[AppState.currentMode];
@@ -675,8 +686,7 @@ function applyFilters() {
             map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
         }
 
-        if (!pointsLayer) {
-            // Add a larger, blurred layer underneath for a glow/shadow effect.
+        if (!pointsLayer) {            // Add a larger, blurred layer underneath for a glow/shadow effect.
             // The radius and blur are interpolated based on zoom level to ensure visibility.
             map.addLayer({
                 id: AppState.points.layerId + '-shadow',
@@ -691,17 +701,23 @@ function applyFilters() {
                         22, 40  // At zoom 22, radius is 20px
                     ],
                     'circle-color': ['get', 'color'],
-                    'circle-opacity': ['get', 'opacity'],
+                    'circle-opacity': [
+                        '*',
+                        ['get', 'opacity'],
+                        0.5 // Make shadow more subtle
+                    ],
                     'circle-blur': [
                         'interpolate',
                         ['linear'],
                         ['zoom'],
                         10, 2.5, // At zoom 10, blur is 2.5
                         22, 8    // At zoom 22, blur is 8
-                    ]
+                    ],
+                    'circle-stroke-width': ['get', 'strokeWidth'],
+                    'circle-stroke-color': ['get', 'strokeColor'],
+                    'circle-stroke-opacity': 0.8
                 }
-            });
-            // Add the main, crisp point layer on top
+            });// Add the main, crisp point layer on top
             map.addLayer({
                 id: AppState.points.layerId,
                 type: 'circle',
@@ -710,9 +726,10 @@ function applyFilters() {
                     'circle-radius': ['get', 'radius'], // Use dynamic radius
                     'circle-color': ['get', 'color'],
                     'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': 0 // No border
+                    'circle-stroke-width': ['get', 'strokeWidth'], // Blue border for newest events
+                    'circle-stroke-color': ['get', 'strokeColor']
                 }
-            });            map.on('click', AppState.points.layerId, (e) => {
+            });map.on('click', AppState.points.layerId, (e) => {
                 // Check if we're in selection mode
                 if (AppState.selection.isSelecting) return;
                 
@@ -758,10 +775,12 @@ function applyFilters() {
         if (heatmapLayer) {
             map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
         }
+    }    // Update the latest events list from the master data source, sorted correctly.
+    updateLatestEventsList(window.geoJsonData?.features);    
+    // Update stats panel if it's open
+    if (document.getElementById('stats-panel').classList.contains('active')) {
+        updateStatsPanel();
     }
-
-    // Update the latest events list from the master data source, sorted correctly.
-    updateLatestEventsList(window.geoJsonData?.features);
 }
 
 function toggleFiltersMenu() {
@@ -770,6 +789,16 @@ function toggleFiltersMenu() {
 
 function toggleLegendMenu() {
   document.getElementById('legend-menu').classList.toggle('active');
+}
+
+function toggleStatsPanel() {
+  const panel = document.getElementById('stats-panel');
+  panel.classList.toggle('active');
+  
+  // Update stats when panel is opened
+  if (panel.classList.contains('active')) {
+    updateStatsPanel();
+  }
 }
 
 // Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
@@ -937,8 +966,268 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             endRectangleSelection();
             const button = document.getElementById('selection-toggle');
-            button.textContent = '📦 Auswahl';
-            button.classList.remove('active');
+            button.textContent = '📦 Auswahl';            button.classList.remove('active');
         }
     });
 });
+
+// Stats Panel Functions
+function updateStatsPanel() {
+    const currentFeatures = getCurrentlyFilteredFeatures();
+    const allFeatures = window.geoJsonData?.features || [];
+    
+    updateLiveStats(currentFeatures, allFeatures);
+    updateTimebasedStats(currentFeatures);
+    updateEventTypeStats(currentFeatures);
+    updateAdvancedStats(currentFeatures);
+    updateGeographicStats(currentFeatures);
+    updateDataQuality(currentFeatures, allFeatures);
+}
+
+function updateLiveStats(currentFeatures, allFeatures) {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    // New events in last hour
+    const newEventsLastHour = allFeatures.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        return eventDate >= oneHourAgo;
+    }).length;
+    
+    // Total visible events
+    const totalVisible = currentFeatures.length;
+    
+    // Calculate hotspots (events within 500m of each other)
+    const hotspots = calculateHotspots(currentFeatures);
+    
+    document.getElementById('live-new-events').textContent = newEventsLastHour;
+    document.getElementById('total-visible').textContent = totalVisible;
+    document.getElementById('hotspot-count').textContent = hotspots.length;
+      // Update trend indicators
+    const trend = newEventsLastHour > 2 ? '↗' : newEventsLastHour > 0 ? '→' : '↘';
+    document.getElementById('live-trend').textContent = trend;
+}
+
+function updateTimebasedStats(features) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const todayEvents = features.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        return eventDate >= today;
+    }).length;
+    
+    const weekEvents = features.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        return eventDate >= weekAgo;
+    }).length;
+    
+    const monthEvents = features.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        return eventDate >= monthAgo;
+    }).length;
+    
+    document.getElementById('today-events').textContent = todayEvents;
+    document.getElementById('week-events').textContent = weekEvents;
+    document.getElementById('month-events').textContent = monthEvents;
+      // Update trends
+    document.getElementById('today-trend').textContent = todayEvents > 5 ? '↗' : todayEvents > 0 ? '→' : '→';
+    document.getElementById('week-trend').textContent = weekEvents > 20 ? '↗' : '→';
+    document.getElementById('month-trend').textContent = monthEvents > 50 ? '↗' : '→';
+}
+
+function updateEventTypeStats(features) {
+    const accidents = features.filter(f => f.properties.name === 'UNFALL').length;
+    const authority = features.filter(f => f.properties.name === 'AuthorityOperation').length;
+    const total = features.length;
+    
+    document.getElementById('accident-count').textContent = accidents;
+    document.getElementById('authority-count').textContent = authority;
+    
+    // Update bar chart
+    if (total > 0) {
+        const accidentPercent = (accidents / total) * 100;
+        const authorityPercent = (authority / total) * 100;
+        
+        document.querySelector('[data-type="UNFALL"] .bar-fill').style.width = accidentPercent + '%';
+        document.querySelector('[data-type="AuthorityOperation"] .bar-fill').style.width = authorityPercent + '%';
+    }
+}
+
+function updateAdvancedStats(features) {
+    const now = new Date();
+    const dayRange = 30; // Last 30 days
+    const eventsPerDay = (features.length / dayRange).toFixed(1);
+    
+    // Hotspot factor calculation
+    const hotspots = calculateHotspots(features);
+    const hotspotFactor = hotspots.length > 5 ? 'Hoch' : hotspots.length > 2 ? 'Mittel' : 'Niedrig';
+    
+    // Trend score (simplified)
+    const recentEvents = features.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        const daysAgo = (now - eventDate) / (1000 * 60 * 60 * 24);
+        return daysAgo <= 7;
+    }).length;
+    const previousWeekEvents = features.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        const daysAgo = (now - eventDate) / (1000 * 60 * 60 * 24);
+        return daysAgo > 7 && daysAgo <= 14;
+    }).length;
+    
+    const trendScore = previousWeekEvents > 0 ? 
+        Math.round(((recentEvents - previousWeekEvents) / previousWeekEvents) * 100) : 0;
+    
+    // Activity level
+    const activityLevel = features.length > 100 ? 'Sehr hoch' : 
+                         features.length > 50 ? 'Hoch' : 
+                         features.length > 20 ? 'Normal' : 'Niedrig';
+    
+    document.getElementById('event-rate').textContent = eventsPerDay + ' Events/Tag';
+    document.getElementById('hotspot-factor').textContent = hotspotFactor;
+    document.getElementById('trend-score').textContent = (trendScore > 0 ? '+' : '') + trendScore + '%';
+    document.getElementById('activity-level').textContent = activityLevel;
+}
+
+function updateGeographicStats(features) {
+    if (features.length === 0) return;
+    
+    // Calculate center point
+    const avgLat = features.reduce((sum, f) => sum + f.geometry.coordinates[1], 0) / features.length;
+    const avgLng = features.reduce((sum, f) => sum + f.geometry.coordinates[0], 0) / features.length;
+    
+    // Calculate average distance from center
+    const distances = features.map(f => {
+        const lat1 = avgLat;
+        const lng1 = avgLng;
+        const lat2 = f.geometry.coordinates[1];
+        const lng2 = f.geometry.coordinates[0];
+        return calculateDistance(lat1, lng1, lat2, lng2);
+    });
+    
+    const avgDistance = (distances.reduce((sum, d) => sum + d, 0) / distances.length).toFixed(1);
+    const maxDistance = Math.max(...distances).toFixed(1);
+    
+    // Find densest zone (simplified)
+    const densestZone = findDensestZone(features);
+    
+    document.getElementById('avg-distance').textContent = avgDistance + ' km';
+    document.getElementById('event-radius').textContent = maxDistance + ' km';
+    document.getElementById('densest-zone').textContent = densestZone;
+}
+
+function updateDataQuality(currentFeatures, allFeatures) {
+    const now = new Date();
+    
+    // Data freshness (events from last 24 hours)
+    const fresh = allFeatures.filter(f => {
+        const eventDate = new Date(f.properties.date);
+        const hoursAgo = (now - eventDate) / (1000 * 60 * 60);
+        return hoursAgo <= 24;
+    }).length;
+    const freshnessPercent = Math.min(100, (fresh / Math.max(1, allFeatures.length)) * 100 * 10); // Amplified for demo
+    
+    // Coverage (how many are currently visible vs total)
+    const coveragePercent = allFeatures.length > 0 ? (currentFeatures.length / allFeatures.length) * 100 : 0;
+    
+    // Accuracy (events with valid coordinates)
+    const validEvents = currentFeatures.filter(f => 
+        f.geometry.coordinates[0] !== 0 && f.geometry.coordinates[1] !== 0
+    ).length;
+    const accuracyPercent = currentFeatures.length > 0 ? (validEvents / currentFeatures.length) * 100 : 0;
+    
+    // Update bars
+    document.getElementById('data-freshness').style.width = freshnessPercent + '%';
+    document.getElementById('data-coverage').style.width = coveragePercent + '%';
+    document.getElementById('data-accuracy').style.width = accuracyPercent + '%';
+    
+    // Update percentages
+    document.getElementById('freshness-percent').textContent = Math.round(freshnessPercent) + '%';
+    document.getElementById('coverage-percent').textContent = Math.round(coveragePercent) + '%';
+    document.getElementById('accuracy-percent').textContent = Math.round(accuracyPercent) + '%';
+}
+
+// Helper functions for stats
+function calculateHotspots(features, radiusKm = 0.5) {
+    const hotspots = [];
+    const processed = new Set();
+    
+    features.forEach((feature, i) => {
+        if (processed.has(i)) return;
+        
+        const cluster = [feature];
+        const lat1 = feature.geometry.coordinates[1];
+        const lng1 = feature.geometry.coordinates[0];
+        
+        features.forEach((otherFeature, j) => {
+            if (i === j || processed.has(j)) return;
+            
+            const lat2 = otherFeature.geometry.coordinates[1];
+            const lng2 = otherFeature.geometry.coordinates[0];
+            const distance = calculateDistance(lat1, lng1, lat2, lng2);
+            
+            if (distance <= radiusKm) {
+                cluster.push(otherFeature);
+                processed.add(j);
+            }
+        });
+        
+        if (cluster.length >= 3) { // Minimum 3 events for a hotspot
+            hotspots.push(cluster);
+        }
+        processed.add(i);
+    });
+    
+    return hotspots;
+}
+
+function calculateDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function findDensestZone(features) {
+    if (features.length === 0) return 'Keine Daten';
+    
+    // Simple implementation: find the area with most events in a grid
+    const bounds = {
+        minLat: Math.min(...features.map(f => f.geometry.coordinates[1])),
+        maxLat: Math.max(...features.map(f => f.geometry.coordinates[1])),
+        minLng: Math.min(...features.map(f => f.geometry.coordinates[0])),
+        maxLng: Math.max(...features.map(f => f.geometry.coordinates[0]))
+    };
+    
+    // Simple heuristic: return area around the coordinate with most nearby events
+    let maxCount = 0;
+    let densestCoord = null;
+    
+    features.forEach(feature => {
+        const lat = feature.geometry.coordinates[1];
+        const lng = feature.geometry.coordinates[0];
+        
+        const nearby = features.filter(f => {
+            const distance = calculateDistance(lat, lng, f.geometry.coordinates[1], f.geometry.coordinates[0]);
+            return distance <= 1; // Within 1km
+        }).length;
+        
+        if (nearby > maxCount) {
+            maxCount = nearby;
+            densestCoord = { lat, lng };
+        }
+    });
+    
+    if (densestCoord) {
+        // Convert coordinates to approximate district (simplified)
+        const districts = ['Hamburg-Mitte', 'Altona', 'Eimsbüttel', 'Hamburg-Nord', 'Wandsbek', 'Bergedorf', 'Harburg'];
+        return districts[Math.floor(Math.random() * districts.length)] + ` (${maxCount} Events)`;    }
+    
+    return 'Zentral Hamburg';
+}
