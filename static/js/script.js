@@ -12,6 +12,15 @@ const AppState = {
   
     modes: ['Punkte', 'Heatmap', 'Beides'],
     currentMode: 0,
+
+    // Selection state
+    selection: {
+      isSelecting: false,
+      startPoint: null,
+      endPoint: null,
+      selectedEvents: [],
+      selectionBox: null
+    },
   
     events: {
       features: [],
@@ -178,10 +187,68 @@ const map = new mapboxgl.Map({
 });
 addControls(map);
 
+// Add rectangle selection event handlers
 map.on('load', () => {
     // Apply initial filters once the map has loaded.
     // This will use the default date values set in the DOMContentLoaded listener.
     applyFilters();
+});
+
+// Rectangle selection event handlers
+map.on('mousedown', (e) => {
+    if (!AppState.selection.isSelecting) return;
+    
+    AppState.selection.startPoint = {
+        x: e.point.x,
+        y: e.point.y
+    };
+    
+    e.preventDefault();
+});
+
+map.on('mousemove', (e) => {
+    if (!AppState.selection.isSelecting || !AppState.selection.startPoint) return;
+    
+    AppState.selection.endPoint = {
+        x: e.point.x,
+        y: e.point.y
+    };
+    
+    createSelectionBox(AppState.selection.startPoint, AppState.selection.endPoint);
+});
+
+map.on('mouseup', (e) => {
+    if (!AppState.selection.isSelecting || !AppState.selection.startPoint) return;
+    
+    AppState.selection.endPoint = {
+        x: e.point.x,
+        y: e.point.y
+    };
+    
+    // Get events in the selected rectangle
+    const selectedEvents = getEventsInRectangle(AppState.selection.startPoint, AppState.selection.endPoint);
+      if (selectedEvents.length > 0) {
+        AppState.selection.selectedEvents = selectedEvents;
+        showMultipleEventDetails(selectedEvents);
+    } else {
+        // Show a temporary message for empty selection
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('event-content');
+        content.innerHTML = `
+            <h2>Keine Ereignisse gefunden</h2>
+            <p>In dem ausgewählten Bereich wurden keine Ereignisse gefunden.</p>
+            <p>Versuche einen größeren Bereich zu wählen oder prüfe die aktuellen Filter.</p>
+        `;
+        sidebar.classList.add('active');
+        
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+            sidebar.classList.remove('active');
+        }, 3000);
+    }
+    
+    // End selection mode
+    endRectangleSelection();
 });
 
 // 5. Klasse für Events (Marker) - REMOVED FOR PERFORMANCE. Using GeoJSON layer instead.
@@ -290,6 +357,226 @@ async function showEventDetails(event) {
             locationTextElement.appendChild(link);
         }
     }
+}
+
+// New function to show multiple selected events
+function showMultipleEventDetails(events) {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('event-content');
+    if (!sidebar || !content) {
+        console.error('Sidebar or event content element not found!');
+        return;
+    }
+
+    content.innerHTML = `
+        <h2>Ausgewählte Ereignisse (${events.length})</h2>
+        <div id="selected-events-list"></div>
+    `;
+
+    const eventsList = document.getElementById('selected-events-list');
+    
+    events.forEach((event, index) => {
+        const formattedDate = event.date.toLocaleString('de-DE', {
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });        const eventDiv = document.createElement('div');
+        eventDiv.className = 'selected-event-item';
+        eventDiv.innerHTML = `
+            <div class="event-header" onclick="toggleEventDetails(${index})">
+                <h3>${event.title} <span class="toggle-icon">▼</span></h3>
+            </div>
+            <div class="event-details" id="event-details-${index}" style="display: none;">
+                <p><strong>Date:</strong> ${formattedDate}</p>
+                <p><strong>Coordinates:</strong> ${event.coordinates[1].toFixed(6)}, ${event.coordinates[0].toFixed(6)}</p>
+                <p><strong>Location:</strong> <a href="#" id="multi-event-location-${index}" style="color: #4c51bf; text-decoration: underline; cursor: pointer;" data-lng="${event.coordinates[0]}" data-lat="${event.coordinates[1]}">Click to fetch location</a></p>
+                <p>${event.description || 'No description available.'}</p>
+                <button onclick="flyToEvent(${event.coordinates[0]}, ${event.coordinates[1]})" class="fly-to-btn">Zu diesem Ereignis</button>
+            </div>
+        `;
+        eventsList.appendChild(eventDiv);
+
+        // Add event listener for location fetching in multi-event view
+        const locationLink = eventDiv.querySelector(`#multi-event-location-${index}`);
+        if (locationLink) {
+            locationLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const link = e.currentTarget;
+                const lng = parseFloat(link.dataset.lng);
+                const lat = parseFloat(link.dataset.lat);
+                
+                link.textContent = 'Loading...';
+                link.style.textDecoration = 'none';
+                link.style.cursor = 'default';
+                
+                const placeName = await reverseGeocode(lng, lat);
+                
+                if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
+                    link.textContent = placeName;
+                    link.style.color = '#718096';
+                } else {
+                    link.textContent = placeName;
+                    link.style.textDecoration = 'underline';
+                    link.style.cursor = 'pointer';
+                    link.style.color = '#4c51bf';
+                    
+                    // Add click event to fly to location
+                    link.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        map.flyTo({
+                            center: [lng, lat],
+                            zoom: 15,
+                            speed: 0.8
+                        });
+                    });
+                }
+            }, { once: true });
+        }
+    });
+
+    sidebar.classList.add('active');
+}
+
+// Toggle individual event details in multi-selection view
+function toggleEventDetails(index) {
+    const details = document.getElementById(`event-details-${index}`);
+    const icon = document.querySelector(`#selected-events-list .event-header:nth-child(${(index * 2) + 1}) .toggle-icon`);
+    
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        icon.textContent = '▲';
+    } else {
+        details.style.display = 'none';
+        icon.textContent = '▼';
+    }
+}
+
+// Fly to specific event coordinates
+function flyToEvent(lng, lat) {
+    map.flyTo({
+        center: [lng, lat],
+        zoom: 15,
+        speed: 0.8
+    });
+}
+
+// Rectangle selection functions
+function startRectangleSelection() {
+    AppState.selection.isSelecting = true;
+    map.getCanvas().style.cursor = 'crosshair';
+    
+    // Disable map interactions during selection
+    map.dragPan.disable();
+    map.scrollZoom.disable();
+    map.boxZoom.disable();
+    map.dragRotate.disable();
+    map.keyboard.disable();
+    map.doubleClickZoom.disable();
+    map.touchZoomRotate.disable();
+}
+
+function endRectangleSelection() {
+    AppState.selection.isSelecting = false;
+    AppState.selection.startPoint = null;
+    AppState.selection.endPoint = null;
+    map.getCanvas().style.cursor = '';
+    
+    // Re-enable map interactions
+    map.dragPan.enable();
+    map.scrollZoom.enable();
+    map.boxZoom.enable();
+    map.dragRotate.enable();
+    map.keyboard.enable();
+    map.doubleClickZoom.enable();
+    map.touchZoomRotate.enable();
+    
+    // Remove selection box if it exists
+    if (AppState.selection.selectionBox) {
+        AppState.selection.selectionBox.remove();
+        AppState.selection.selectionBox = null;
+    }
+}
+
+function createSelectionBox(startPoint, endPoint) {
+    // Remove existing selection box
+    if (AppState.selection.selectionBox) {
+        AppState.selection.selectionBox.remove();
+    }
+    
+    const box = document.createElement('div');
+    box.className = 'selection-box';
+    
+    const left = Math.min(startPoint.x, endPoint.x);
+    const top = Math.min(startPoint.y, endPoint.y);
+    const width = Math.abs(endPoint.x - startPoint.x);
+    const height = Math.abs(endPoint.y - startPoint.y);
+    
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+    box.style.width = width + 'px';
+    box.style.height = height + 'px';
+    
+    map.getContainer().appendChild(box);
+    AppState.selection.selectionBox = box;
+}
+
+function getEventsInRectangle(startPoint, endPoint) {
+    // Use currently filtered and visible features instead of all features
+    const currentlyVisibleFeatures = getCurrentlyFilteredFeatures();
+    const selectedEvents = [];
+    
+    // Convert screen coordinates to map coordinates
+    const startLngLat = map.unproject(startPoint);
+    const endLngLat = map.unproject(endPoint);
+    
+    // Create bounding box
+    const minLng = Math.min(startLngLat.lng, endLngLat.lng);
+    const maxLng = Math.max(startLngLat.lng, endLngLat.lng);
+    const minLat = Math.min(startLngLat.lat, endLngLat.lat);
+    const maxLat = Math.max(startLngLat.lat, endLngLat.lat);
+    
+    currentlyVisibleFeatures.forEach(feature => {
+        const [lng, lat] = feature.geometry.coordinates;
+        
+        if (lng >= minLng && lng <= maxLng && lat >= minLat && lat <= maxLat) {
+            const event = {
+                title: feature.properties.name,
+                date: new Date(feature.properties.date),
+                coordinates: feature.geometry.coordinates,
+                description: feature.properties.description
+            };
+            selectedEvents.push(event);
+        }
+    });
+    
+    return selectedEvents;
+}
+
+// Helper function to get currently filtered features (same logic as applyFilters)
+function getCurrentlyFilteredFeatures() {
+    const startDateString = document.getElementById('filter-start-date')?.value;
+    const endDateString = document.getElementById('filter-end-date')?.value;
+    const startDate = startDateString ? new Date(startDateString) : null;
+    let endDate = endDateString ? new Date(endDateString) : null;
+
+    if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+    }
+    if (startDate) {
+        startDate.setHours(0, 0, 0, 0);
+    }
+
+    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
+    const checkedTypes = Array.from(typeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+    const filteredFeatures = (window.geoJsonData?.features || []).filter(feature => {
+        const eventDate = new Date(feature.properties.date);
+        if (startDate && eventDate < startDate) return false;
+        if (endDate && eventDate > endDate) return false;
+        if (checkedTypes.length > 0 && !checkedTypes.includes(feature.properties.name)) return false;
+        return true;
+    });
+
+    return filteredFeatures;
 }
 
 function toggleSidebar() {
@@ -425,9 +712,10 @@ function applyFilters() {
                     'circle-opacity': ['get', 'opacity'],
                     'circle-stroke-width': 0 // No border
                 }
-            });
-
-            map.on('click', AppState.points.layerId, (e) => {
+            });            map.on('click', AppState.points.layerId, (e) => {
+                // Check if we're in selection mode
+                if (AppState.selection.isSelecting) return;
+                
                 const feature = e.features[0];
                 // Re-create an "event" object for showEventDetails from the feature
                 const event = {
@@ -514,13 +802,11 @@ function updateLatestEventsList(features) {
         const date = new Date(p.date).toLocaleString('de-DE');
         const location = p.location;
         const lat = coords[1];
-        const lng = coords[0];
-
-        let locationHTML;
+        const lng = coords[0];        let locationHTML;
         if (location && location !== 'N/A') {
             locationHTML = `<span>${location}</span>`;
         } else {
-            locationHTML = `<span id="${locationId}">N/A</span> <button class="fetch-location-btn" data-lng="${lng}" data-lat="${lat}" style="cursor: pointer; border: none; background: none; font-size: 1.2em; padding: 0 5px;">📍</button>`;
+            locationHTML = `<a href="#" id="${locationId}" style="color: #4c51bf; text-decoration: underline; cursor: pointer;" data-lng="${lng}" data-lat="${lat}">Click to fetch location</a>`;
         }
 
         eventDiv.innerHTML = `
@@ -530,41 +816,43 @@ function updateLatestEventsList(features) {
           <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
           <p>${p.description || 'No description.'}</p>
         `;
-        
-        content.appendChild(eventDiv);
+          content.appendChild(eventDiv);
 
-        const fetchBtn = eventDiv.querySelector('.fetch-location-btn');
-        if (fetchBtn) {
-            fetchBtn.addEventListener('click', async (e) => {
-                const button = e.currentTarget;
-                const lng = parseFloat(button.dataset.lng);
-                const lat = parseFloat(button.dataset.lat);
-                const locationSpan = eventDiv.querySelector(`#${locationId}`);
-                if (locationSpan) {
-                    locationSpan.textContent = 'Loading...';
-                    const placeName = await reverseGeocode(lng, lat);
-                    
-                    locationSpan.innerHTML = '';
+        const fetchLink = eventDiv.querySelector(`#${locationId}`);
+        if (fetchLink) {
+            fetchLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const link = e.currentTarget;
+                const lng = parseFloat(link.dataset.lng);
+                const lat = parseFloat(link.dataset.lat);
+                
+                link.textContent = 'Loading...';
+                link.style.textDecoration = 'none';
+                link.style.cursor = 'default';
+                
+                const placeName = await reverseGeocode(lng, lat);
+                
+                link.innerHTML = '';
 
-                    if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
-                        locationSpan.textContent = placeName;
-                    } else {
-                        const link = document.createElement('a');
-                        link.href = '#';
-                        link.textContent = placeName;
-                        link.style.cursor = 'pointer';
-                        link.style.textDecoration = 'underline';
-                        link.addEventListener('click', (ev) => {
-                            ev.preventDefault();
-                            map.flyTo({
-                                center: [lng, lat],
-                                zoom: 15,
-                                speed: 0.8
-                            });
+                if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
+                    link.textContent = placeName;
+                    link.style.color = '#718096';
+                } else {
+                    const newLink = document.createElement('a');
+                    newLink.href = '#';
+                    newLink.textContent = placeName;
+                    newLink.style.cursor = 'pointer';
+                    newLink.style.textDecoration = 'underline';
+                    newLink.style.color = '#4c51bf';
+                    newLink.addEventListener('click', (ev) => {
+                        ev.preventDefault();
+                        map.flyTo({
+                            center: [lng, lat],
+                            zoom: 15,
+                            speed: 0.8
                         });
-                        locationSpan.appendChild(link);
-                    }
-                    button.remove();
+                    });
+                    link.parentNode.replaceChild(newLink, link);
                 }
             }, { once: true });
         }
@@ -582,6 +870,23 @@ function toggleLatestEventsSidebar() {
     const sidebar = document.getElementById('latest-events-sidebar');
     if (!sidebar) return;
     sidebar.classList.toggle('active');
+}
+
+// Toggle rectangle selection mode
+function toggleRectangleSelection() {
+    const button = document.getElementById('selection-toggle');
+    
+    if (AppState.selection.isSelecting) {
+        // End selection mode
+        endRectangleSelection();
+        button.textContent = '📦 Auswahl';
+        button.classList.remove('active');
+    } else {
+        // Start selection mode
+        startRectangleSelection();
+        button.textContent = '❌ Beenden';
+        button.classList.add('active');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -611,8 +916,29 @@ document.addEventListener('DOMContentLoaded', () => {
         endDateInput.addEventListener('change', applyFilters);
     }
 
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-    typeCheckboxes.forEach(checkbox => {
+    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');    typeCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', applyFilters);
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        // Press 'S' to toggle selection mode
+        if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            const activeElement = document.activeElement;
+            // Don't trigger if user is typing in an input field
+            if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                toggleRectangleSelection();
+            }
+        }
+        
+        // Press 'Escape' to end selection mode
+        if (e.key === 'Escape' && AppState.selection.isSelecting) {
+            e.preventDefault();
+            endRectangleSelection();
+            const button = document.getElementById('selection-toggle');
+            button.textContent = '📦 Auswahl';
+            button.classList.remove('active');
+        }
     });
 });
