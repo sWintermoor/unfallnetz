@@ -38,23 +38,41 @@ const AppState = {
     points: {
       sourceId: 'points-data',
       layerId: 'points-layer'
-    },
-  
-    districts: {
+    },    districts: {
       'Eimsbüttel': {
-        'Schanzenviertel': [9.963, 53.564],
-        'Hoheluft-West': [9.973, 53.579],
-        'Eppendorf': [9.982, 53.581]
+        'Schanzenviertel': [9.9638, 53.5643],
+        'Hoheluft-West': [9.9736, 53.5794],
+        'Eppendorf': [9.9820, 53.5810]
       },
       'Altona': {
-        'Ottensen': [9.933, 53.554],
-        'Altona-Altstadt': [9.935, 53.546],
-        'Bahrenfeld': [9.906, 53.565]
+        'Ottensen': [9.9326, 53.5542],
+        'Altona-Altstadt': [9.9347, 53.5464],
+        'Bahrenfeld': [9.9061, 53.5654]
       },
       'Hamburg-Mitte': {
-        'St. Pauli': [9.966, 53.550],
-        'HafenCity': [10.002, 53.541],
-        'Altstadt': [10.001, 53.550]
+        'St. Pauli': [9.9658, 53.5503],
+        'HafenCity': [10.0024, 53.5414],
+        'Altstadt': [10.0013, 53.5503]
+      },
+      'Hamburg-Nord': {
+        'Winterhude': [10.0098, 53.5916],
+        'Barmbek': [10.0456, 53.5851],
+        'Fuhlsbüttel': [9.9935, 53.6320]
+      },
+      'Wandsbek': {
+        'Rahlstedt': [10.1547, 53.6058],
+        'Wandsbek': [10.0743, 53.5741],
+        'Bramfeld': [10.0891, 53.6158]
+      },
+      'Bergedorf': {
+        'Bergedorf': [10.2319, 53.4844],
+        'Billstedt': [10.1254, 53.5395],
+        'Lohbrügge': [10.1987, 53.4934]
+      },
+      'Harburg': {
+        'Harburg': [9.9886, 53.4607],
+        'Neugraben-Fischbek': [9.8637, 53.4711],
+        'Finkenwerder': [9.8354, 53.5353]
       }
     }
   };
@@ -121,20 +139,32 @@ function switchTo(indexKey, arrayKey, onChange) {
 const UI = {
   toggle(id) {
     document.getElementById(id)?.classList.toggle('active');
-  },
-  flyToDistrict(value) {
-    const separatorIndex = value.indexOf('-');
-    if (separatorIndex === -1) {
-        console.error('Invalid district format:', value);
-        return;
+  },  flyToDistrict(value) {
+    // Known district prefixes in order of specificity (longer names first)
+    const districtPrefixes = ['Hamburg-Nord', 'Hamburg-Mitte', 'Eimsbüttel', 'Altona', 'Wandsbek', 'Bergedorf', 'Harburg'];
+    
+    let district = null;
+    let subdistrict = null;
+    
+    // Find the matching district prefix
+    for (const prefix of districtPrefixes) {
+      if (value.startsWith(prefix + '-')) {
+        district = prefix;
+        subdistrict = value.substring(prefix.length + 1); // +1 for the '-'
+        break;
+      }
     }
-    const district = value.substring(0, separatorIndex);
-    const subdistrict = value.substring(separatorIndex + 1);
+    
+    if (!district || !subdistrict) {
+      console.error('Invalid district format:', value);
+      return;
+    }
+    
     const coords = AppState.districts[district]?.[subdistrict];
     if (coords) {
       map.flyTo({ center: coords, zoom: 14, speed: 0.8 });
     } else {
-      console.error('Koordinaten nicht gefunden für:', value, 'parsed as', district, subdistrict);
+      console.error('Koordinaten nicht gefunden für:', value, 'parsed as district:', district, 'subdistrict:', subdistrict);
     }
   }
 };
