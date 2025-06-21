@@ -106,6 +106,8 @@ body {
     color: #333; /* Ensure text color for sidebars */
 }
 
+#details { margin-left: 22px;}
+
 #sidebar { right: -320px; }
 #sidebar.active { right: 0; }
 

@@ -148,6 +148,12 @@ const map = new mapboxgl.Map({
 });
 addControls(map);
 
+map.on('load', () => {
+    // Apply initial filters once the map has loaded.
+    // This will use the default date values set in the DOMContentLoaded listener.
+    applyFilters();
+});
+
 // 5. Klasse für Events (Marker) - REMOVED FOR PERFORMANCE. Using GeoJSON layer instead.
 
 // 6. Socket.IO-Verbindung für Echtzeit-Events
@@ -161,20 +167,8 @@ socket.on('EventCreated', (data) => {
   }
   window.geoJsonData.features.push(data);
   
-  // Update map
+  // Update map, which in turn will update the latest events list
   applyFilters();
-
-  // Update "Latest Events" panel
-  const p = data.properties;
-  const coords = data.geometry.coordinates;
-  addLatestEvent(
-      p.name, 
-      new Date(p.date).toLocaleString('de-DE'), 
-      p.location, // Assuming location is now in properties
-      coords[1], 
-      coords[0], 
-      p.description
-  );
 });
 
 // 8. Theme-Wechsel
@@ -196,6 +190,25 @@ function toggleModeChange() {
   });
   document.getElementById('mode-toggle').innerHTML =
     `<h3>${AppState.modes[AppState.currentMode]}</h3>`;
+}
+
+// New helper function for reverse geocoding
+async function reverseGeocode(lng, lat) {
+    try {
+        const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&types=address,poi,neighborhood,locality,place&limit=1`;
+        const response = await fetch(geocodeUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+            return data.features[0].place_name;
+        }
+        return "Location details not found";
+    } catch (error) {
+        console.error('Error fetching location:', error);
+        return "Could not fetch location details";
+    }
 }
 
 // 10. Sidebar- und Filter-Funktionen
@@ -223,41 +236,28 @@ async function showEventDetails(event) {
 
     const locationTextElement = document.getElementById('event-location-text');
 
-    try {
+    if (locationTextElement) {
         const [lng, lat] = event.coordinates;
-        const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&types=address,poi,neighborhood,locality,place&limit=1`;
-        const response = await fetch(geocodeUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        const placeName = await reverseGeocode(lng, lat);
 
-        if (locationTextElement) {
-            if (data.features && data.features.length > 0) {
-                const placeName = data.features[0].place_name;
-                locationTextElement.innerHTML = '';
-                const link = document.createElement('a');
-                link.href = '#';
-                link.textContent = placeName;
-                link.style.cursor = 'pointer';
-                link.style.textDecoration = 'underline';
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    map.flyTo({
-                        center: event.coordinates,
-                        zoom: 15,
-                        speed: 0.8
-                    });
+        locationTextElement.innerHTML = ''; // Clear "Fetching..."
+        if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
+            locationTextElement.textContent = placeName;
+        } else {
+            const link = document.createElement('a');
+            link.href = '#';
+            link.textContent = placeName;
+            link.style.cursor = 'pointer';
+            link.style.textDecoration = 'underline';
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                map.flyTo({
+                    center: event.coordinates,
+                    zoom: 15,
+                    speed: 0.8
                 });
-                locationTextElement.appendChild(link);
-            } else {
-                locationTextElement.textContent = "Location details not found";
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching location:', error);
-        if (locationTextElement) {
-             locationTextElement.textContent = "Could not fetch location details";
+            });
+            locationTextElement.appendChild(link);
         }
     }
 }
@@ -323,6 +323,22 @@ function applyFilters() {
         else if (daysDiff <= 30) opacity = 0.65;
         else if (daysDiff > 90) opacity = 0.15; // Older than 3 months
         feature.properties.opacity = opacity;
+
+        // --- DYNAMIC MARKER SIZING ---
+        const maxRadius = 7;
+        const minRadius = 5.7;
+        const interpolationDays = 90;
+        let radius = minRadius; // Default for oldest
+
+        if (daysDiff <= 0) { // today or future (newest)
+            radius = maxRadius;
+        } else if (daysDiff < interpolationDays) { // linear interpolation
+            const slope = (minRadius - maxRadius) / interpolationDays;
+            radius = slope * daysDiff + maxRadius;
+        }
+        // For daysDiff >= interpolationDays, it will remain minRadius
+
+        feature.properties.radius = radius;
     });
 
     const currentMode = AppState.modes[AppState.currentMode];
@@ -332,6 +348,7 @@ function applyFilters() {
     // --- High-Performance Points Layer ---
     const pointsSource = map.getSource(AppState.points.sourceId);
     const pointsLayer = map.getLayer(AppState.points.layerId);
+    const shadowLayer = map.getLayer(AppState.points.layerId + '-shadow');
     const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
 
     if (showPoints) {
@@ -340,16 +357,43 @@ function applyFilters() {
         } else {
             map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
         }
+
         if (!pointsLayer) {
+            // Add a larger, blurred layer underneath for a glow/shadow effect.
+            // The radius and blur are interpolated based on zoom level to ensure visibility.
+            map.addLayer({
+                id: AppState.points.layerId + '-shadow',
+                type: 'circle',
+                source: AppState.points.sourceId,
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 20, // At zoom 10, radius is 10px
+                        22, 40  // At zoom 22, radius is 20px
+                    ],
+                    'circle-color': ['get', 'color'],
+                    'circle-opacity': ['get', 'opacity'],
+                    'circle-blur': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 2.5, // At zoom 10, blur is 2.5
+                        22, 8    // At zoom 22, blur is 8
+                    ]
+                }
+            });
+            // Add the main, crisp point layer on top
             map.addLayer({
                 id: AppState.points.layerId,
                 type: 'circle',
                 source: AppState.points.sourceId,
                 paint: {
-                    'circle-radius': 7,
+                    'circle-radius': ['get', 'radius'], // Use dynamic radius
                     'circle-color': ['get', 'color'],
                     'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': 0 // Remove black border
+                    'circle-stroke-width': 0 // No border
                 }
             });
 
@@ -368,12 +412,20 @@ function applyFilters() {
             map.on('mouseenter', AppState.points.layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
             map.on('mouseleave', AppState.points.layerId, () => { map.getCanvas().style.cursor = ''; });
         }
+
+        // Toggle visibility for both layers
         if (pointsLayer) {
             map.setLayoutProperty(AppState.points.layerId, 'visibility', 'visible');
+        }
+        if (shadowLayer) {
+            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'visible');
         }
     } else {
         if (pointsLayer) {
             map.setLayoutProperty(AppState.points.layerId, 'visibility', 'none');
+        }
+        if (shadowLayer) {
+            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'none');
         }
     }
 
@@ -389,6 +441,9 @@ function applyFilters() {
             map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
         }
     }
+
+    // Update the latest events list from the master data source, sorted correctly.
+    updateLatestEventsList(window.geoJsonData?.features);
 }
 
 function toggleFiltersMenu() {
@@ -399,33 +454,91 @@ function toggleLegendMenu() {
   document.getElementById('legend-menu').classList.toggle('active');
 }
 
-function addLatestEvent(type, date, location, lat, lng, description) {
-  const content = document.getElementById('latest-events-content');
-  if (!content) return;
+// Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
+function updateLatestEventsList(features) {
+    const content = document.getElementById('latest-events-content');
+    if (!content) return;
 
-  // Remove placeholder if it exists
-  const placeholder = content.querySelector('p');
-  if (placeholder && placeholder.textContent.startsWith('Keine Ereignisse')) {
-      content.innerHTML = '';
-  }
+    // Create a sorted copy of features, newest first.
+    const sortedFeatures = [...(features || [])].sort((a, b) => new Date(b.properties.date) - new Date(a.properties.date));
 
-  const maxEntries = 50;
-  // Remove the oldest entry if the list is full
-  if (content.children.length >= maxEntries) {
-    content.removeChild(content.lastElementChild);
-  }
-  
-  const eventDiv = document.createElement('div');
-  eventDiv.className = 'latest-event';
-  eventDiv.innerHTML = `
-    <h3>${type}</h3>
-    <p><strong>Date:</strong> ${date}</p>
-    <p><strong>Location:</strong> ${location || 'N/A'}</p>
-    <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
-    <p>${description || 'No description.'}</p>
-  `;
-  // Add the new event to the top of the list
-  content.insertBefore(eventDiv, content.firstChild);
+    // Clear the list
+    content.innerHTML = '';
+
+    if (sortedFeatures.length === 0) {
+        content.innerHTML = '<p>Keine Ereignisse vorhanden.</p>';
+        return;
+    }
+
+    const maxEntries = 50;
+    const featuresToShow = sortedFeatures.slice(0, maxEntries);
+
+    featuresToShow.forEach(feature => {
+        const p = feature.properties;
+        const coords = feature.geometry.coordinates;
+        
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'latest-event';
+        
+        const locationId = `latest-event-location-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const date = new Date(p.date).toLocaleString('de-DE');
+        const location = p.location;
+        const lat = coords[1];
+        const lng = coords[0];
+
+        let locationHTML;
+        if (location && location !== 'N/A') {
+            locationHTML = `<span>${location}</span>`;
+        } else {
+            locationHTML = `<span id="${locationId}">N/A</span> <button class="fetch-location-btn" data-lng="${lng}" data-lat="${lat}" style="cursor: pointer; border: none; background: none; font-size: 1.2em; padding: 0 5px;">📍</button>`;
+        }
+
+        eventDiv.innerHTML = `
+          <h3>${p.name}</h3>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Location:</strong> ${locationHTML}</p>
+          <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+          <p>${p.description || 'No description.'}</p>
+        `;
+        
+        content.appendChild(eventDiv);
+
+        const fetchBtn = eventDiv.querySelector('.fetch-location-btn');
+        if (fetchBtn) {
+            fetchBtn.addEventListener('click', async (e) => {
+                const button = e.currentTarget;
+                const lng = parseFloat(button.dataset.lng);
+                const lat = parseFloat(button.dataset.lat);
+                const locationSpan = eventDiv.querySelector(`#${locationId}`);
+                if (locationSpan) {
+                    locationSpan.textContent = 'Loading...';
+                    const placeName = await reverseGeocode(lng, lat);
+                    
+                    locationSpan.innerHTML = '';
+
+                    if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
+                        locationSpan.textContent = placeName;
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = '#';
+                        link.textContent = placeName;
+                        link.style.cursor = 'pointer';
+                        link.style.textDecoration = 'underline';
+                        link.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            map.flyTo({
+                                center: [lng, lat],
+                                zoom: 15,
+                                speed: 0.8
+                            });
+                        });
+                        locationSpan.appendChild(link);
+                    }
+                    button.remove();
+                }
+            }, { once: true });
+        }
+    });
 }
 
 function flyToDistrict() {
@@ -444,6 +557,22 @@ function toggleLatestEventsSidebar() {
 document.addEventListener('DOMContentLoaded', () => {
     const startDateInput = document.getElementById('filter-start-date');
     const endDateInput = document.getElementById('filter-end-date');
+
+    // Sorting is now handled by prepending new events in addLatestEvent.
+    // The flex-direction: column-reverse style is no longer needed.
+
+    // Set default start date to 30 days ago
+    if (startDateInput) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        startDateInput.value = thirtyDaysAgo.toISOString().split('T')[0];
+    }
+    
+    // Set default end date to today
+    if (endDateInput) {
+        const today = new Date();
+        endDateInput.value = today.toISOString().split('T')[0];
+    }
 
     if (startDateInput) {
         startDateInput.addEventListener('change', applyFilters);
