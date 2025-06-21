@@ -14,23 +14,18 @@ const AppState = {
     currentMode: 0,
   
     events: {
-      markers:[],
       features: [],
       all: [],
       
       addEvent(data) {
-        const event = new MapEvent(data);
-        this.all.push(event);
-
+        // No need to create MapEvent objects anymore, we'll work with GeoJSON directly
         if (!window.geoJsonData) {
             window.geoJsonData = {
               type: 'FeatureCollection',
               features: []
           };
         }
-
         window.geoJsonData.features.push(data);
-
         applyFilters();
       },
     },
@@ -38,6 +33,11 @@ const AppState = {
     heat: {
       sourceId: 'heatmap-data',
       layerId: 'heatmap-layer'
+    },
+
+    points: {
+      sourceId: 'points-data',
+      layerId: 'points-layer'
     },
   
     districts: {
@@ -123,12 +123,18 @@ const UI = {
     document.getElementById(id)?.classList.toggle('active');
   },
   flyToDistrict(value) {
-    const [district, subdistrict] = value.split('-');
+    const separatorIndex = value.indexOf('-');
+    if (separatorIndex === -1) {
+        console.error('Invalid district format:', value);
+        return;
+    }
+    const district = value.substring(0, separatorIndex);
+    const subdistrict = value.substring(separatorIndex + 1);
     const coords = AppState.districts[district]?.[subdistrict];
     if (coords) {
       map.flyTo({ center: coords, zoom: 14, speed: 0.8 });
     } else {
-      console.error('Koordinaten nicht gefunden für:', value);
+      console.error('Koordinaten nicht gefunden für:', value, 'parsed as', district, subdistrict);
     }
   }
 };
@@ -142,80 +148,33 @@ const map = new mapboxgl.Map({
 });
 addControls(map);
 
-// 5. Klasse für Events (Marker)
-class MapEvent {
-    constructor(data) {
-        this.title = data.properties.name;
-        this.date = new Date(data.properties.date);
-        this.location = data.location;
-        this.description = data.properties.description;
-        this.coordinates = [data.geometry.coordinates[0], data.geometry.coordinates[1]];
-        this.level = data.properties.value;
-        this.marker = null;
-    }
-
-    getGradientColor() {
-        const now = new Date();
-        const timeDiff = now - this.date;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const daysDiff = timeDiff / oneDay;
-    
-        if (daysDiff <= 0) { // Today or future
-            return 'rgb(0, 255, 0)'; // Bright Green
-        } else if (daysDiff <= 7) { // Up to 1 week old (Green to Yellow)
-            const ratio = daysDiff / 7;
-            const red = Math.round(255 * ratio);
-            return `rgb(${red}, 255, 0)`;
-        } else if (daysDiff <= 14) { // 1 to 2 weeks old (Yellow to Red)
-            const ratio = (daysDiff - 7) / 7;
-            const green = Math.round(255 * (1 - ratio));
-            return `rgb(255, ${green}, 0)`;
-        } else if (daysDiff <= 30) { // 2 weeks to 1 month old (Red to Grey)
-            const ratio = (daysDiff - 14) / 16; // 30 - 14 = 16 days
-            const colorValue = Math.round(255 - (127 * ratio)); // From 255 (red component) down to 128 (grey)
-            return `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
-        } else { // Older than 1 month
-            return 'rgb(200, 200, 200)'; // Light Grey
-        }
-    }
-
-    getMarkerOpacity() {
-        const now = new Date();
-        const timeDiff = now - this.date;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const daysDiff = timeDiff / oneDay;
-
-        if (daysDiff <= 1) return 1;
-        if (daysDiff <= 7) return 0.9;
-        if (daysDiff <= 14) return 0.8;
-        if (daysDiff <= 30) return 0.65;
-        return 0.5;
-    }
-
-    createMarker() {
-        const el = document.createElement('div');
-        el.className = 'map-marker';
-        el.style.backgroundColor = this.getGradientColor();
-        el.style.opacity = this.getMarkerOpacity();
-        el.style.width = '15px';
-        el.style.height = '15px';
-        el.style.borderRadius = '75%';
-        el.type = this.title;
-
-        this.marker = new mapboxgl.Marker(el)
-            .setLngLat(this.coordinates);
-
-        el.addEventListener('click', () => showEventDetails(this));
-        return this.marker;
-    }
-}
+// 5. Klasse für Events (Marker) - REMOVED FOR PERFORMANCE. Using GeoJSON layer instead.
 
 // 6. Socket.IO-Verbindung für Echtzeit-Events
 const socket = io();
 socket.on('connect', () => console.log('Verbunden mit Server'));
 socket.on('disconnect', () => console.log('Verbindung getrennt'));
 socket.on('EventCreated', (data) => {
-  AppState.events.addEvent(data);
+  // Add to internal data store
+  if (!window.geoJsonData) {
+    window.geoJsonData = { type: 'FeatureCollection', features: [] };
+  }
+  window.geoJsonData.features.push(data);
+  
+  // Update map
+  applyFilters();
+
+  // Update "Latest Events" panel
+  const p = data.properties;
+  const coords = data.geometry.coordinates;
+  addLatestEvent(
+      p.name, 
+      new Date(p.date).toLocaleString('de-DE'), 
+      p.location, // Assuming location is now in properties
+      coords[1], 
+      coords[0], 
+      p.description
+  );
 });
 
 // 8. Theme-Wechsel
@@ -303,6 +262,10 @@ async function showEventDetails(event) {
     }
 }
 
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.remove('active');
+}
+
 function applyFilters() {
     const startDateString = document.getElementById('filter-start-date')?.value;
     const endDateString = document.getElementById('filter-end-date')?.value;
@@ -319,60 +282,112 @@ function applyFilters() {
     const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
     const checkedTypes = Array.from(typeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
 
-    // Clear existing layers
-    AppState.events.markers.forEach(m => m.remove());
-    AppState.events.markers = [];
-    if (map.getLayer(AppState.heat.layerId)) {
-        map.removeLayer(AppState.heat.layerId);
-    }
-    if (map.getSource(AppState.heat.sourceId)) {
-        map.removeSource(AppState.heat.sourceId);
-    }
+    const filteredFeatures = (window.geoJsonData?.features || []).filter(feature => {
+        const eventDate = new Date(feature.properties.date);
+        if (startDate && eventDate < startDate) return false;
+        if (endDate && eventDate > endDate) return false;
+        if (checkedTypes.length > 0 && !checkedTypes.includes(feature.properties.name)) return false;
+        return true;
+    });
+
+    // Pre-calculate color and opacity for performance
+    filteredFeatures.forEach(feature => {
+        const eventDate = new Date(feature.properties.date);
+        const now = new Date();
+        const timeDiff = now - eventDate;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const daysDiff = timeDiff / oneDay;
+
+        let color = 'rgb(200, 200, 200)'; // Default: Light Grey
+        if (daysDiff <= 0) {
+            color = 'rgb(0, 255, 0)';
+        } else if (daysDiff <= 7) {
+            const ratio = daysDiff / 7;
+            const red = Math.round(255 * ratio);
+            color = `rgb(${red}, 255, 0)`;
+        } else if (daysDiff <= 14) {
+            const ratio = (daysDiff - 7) / 7;
+            const green = Math.round(255 * (1 - ratio));
+            color = `rgb(255, ${green}, 0)`;
+        } else if (daysDiff <= 30) {
+            const ratio = (daysDiff - 14) / 16;
+            const colorValue = Math.round(255 - (127 * ratio));
+            color = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+        }
+        feature.properties.color = color;
+
+        let opacity = 0.5; // Default for > 30 and <= 90 days
+        if (daysDiff <= 1) opacity = 1;
+        else if (daysDiff <= 7) opacity = 0.9;
+        else if (daysDiff <= 14) opacity = 0.8;
+        else if (daysDiff <= 30) opacity = 0.65;
+        else if (daysDiff > 90) opacity = 0.15; // Older than 3 months
+        feature.properties.opacity = opacity;
+    });
 
     const currentMode = AppState.modes[AppState.currentMode];
-    
-    const filteredEvents = AppState.events.all.filter(event => {
-        let visible = true;
-        if (startDate && event.date < startDate) {
-            visible = false;
-        }
-        if (endDate && event.date > endDate) {
-            visible = false;
-        }
-        if (!checkedTypes.includes(event.title)) {
-            visible = false;
-        }
-        return visible;
-    });
+    const showPoints = currentMode === 'Punkte' || currentMode === 'Beides';
+    const showHeatmap = currentMode === 'Heatmap' || currentMode === 'Beides';
 
-    const filteredFeatures = window.geoJsonData.features.filter(feature => {
-        const eventDate = new Date(feature.properties.date);
-        let visible = true;
-        if (startDate && eventDate < startDate) {
-            visible = false;
-        }
-        if (endDate && eventDate > endDate) {
-            visible = false;
-        }
-        if (!checkedTypes.includes(feature.properties.name)) {
-            visible = false;
-        }
-        return visible;
-    });
+    // --- High-Performance Points Layer ---
+    const pointsSource = map.getSource(AppState.points.sourceId);
+    const pointsLayer = map.getLayer(AppState.points.layerId);
+    const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
 
-    if (currentMode === 'Punkte' || currentMode === 'Beides') {
-        filteredEvents.forEach(event => {
-            const marker = event.createMarker();
-            marker.addTo(map);
-            AppState.events.markers.push(marker);
-        });
+    if (showPoints) {
+        if (pointsSource) {
+            pointsSource.setData(pointsData);
+        } else {
+            map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
+        }
+        if (!pointsLayer) {
+            map.addLayer({
+                id: AppState.points.layerId,
+                type: 'circle',
+                source: AppState.points.sourceId,
+                paint: {
+                    'circle-radius': 7,
+                    'circle-color': ['get', 'color'],
+                    'circle-opacity': ['get', 'opacity'],
+                    'circle-stroke-width': 0 // Remove black border
+                }
+            });
+
+            map.on('click', AppState.points.layerId, (e) => {
+                const feature = e.features[0];
+                // Re-create an "event" object for showEventDetails from the feature
+                const event = {
+                    title: feature.properties.name,
+                    date: new Date(feature.properties.date),
+                    coordinates: feature.geometry.coordinates,
+                    description: feature.properties.description
+                };
+                showEventDetails(event);
+            });
+
+            map.on('mouseenter', AppState.points.layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+            map.on('mouseleave', AppState.points.layerId, () => { map.getCanvas().style.cursor = ''; });
+        }
+        if (pointsLayer) {
+            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'visible');
+        }
+    } else {
+        if (pointsLayer) {
+            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'none');
+        }
     }
 
-    if (currentMode === 'Heatmap' || currentMode === 'Beides') {
-        initializeHeatMapLayer(map, {
-            type: 'FeatureCollection',
-            features: filteredFeatures
-        });
+    // --- Heatmap Layer ---
+    const heatmapLayer = map.getLayer(AppState.heat.layerId);
+    if (showHeatmap) {
+        initializeHeatMapLayer(map, { type: 'FeatureCollection', features: filteredFeatures });
+        if (heatmapLayer) {
+            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'visible');
+        }
+    } else {
+        if (heatmapLayer) {
+            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
+        }
     }
 }
 
@@ -387,20 +402,30 @@ function toggleLegendMenu() {
 function addLatestEvent(type, date, location, lat, lng, description) {
   const content = document.getElementById('latest-events-content');
   if (!content) return;
-  const maxEntries = 50;
-  if (content.children.length >= maxEntries) {
-    content.removeChild(content.firstElementChild);
+
+  // Remove placeholder if it exists
+  const placeholder = content.querySelector('p');
+  if (placeholder && placeholder.textContent.startsWith('Keine Ereignisse')) {
+      content.innerHTML = '';
   }
+
+  const maxEntries = 50;
+  // Remove the oldest entry if the list is full
+  if (content.children.length >= maxEntries) {
+    content.removeChild(content.lastElementChild);
+  }
+  
   const eventDiv = document.createElement('div');
   eventDiv.className = 'latest-event';
   eventDiv.innerHTML = `
     <h3>${type}</h3>
     <p><strong>Date:</strong> ${date}</p>
-    <p><strong>Location:</strong> ${location}</p>
-    <p><strong>Coordinates:</strong> ${lat}, ${lng}</p>
-    <p>${description}</p>
+    <p><strong>Location:</strong> ${location || 'N/A'}</p>
+    <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+    <p>${description || 'No description.'}</p>
   `;
-  content.appendChild(eventDiv);
+  // Add the new event to the top of the list
+  content.insertBefore(eventDiv, content.firstChild);
 }
 
 function flyToDistrict() {
