@@ -58,7 +58,12 @@
             <h2>Filter</h2>
             <button class="close-btn" onclick="toggleFiltersMenu()">✕</button>
         </div>
-        <form id="filter-form">
+        <form id="filter-form" style="padding: 20px;">
+            <label for="filter-start-date" style="display: block; margin-bottom: 5px; font-weight: bold;">Start Date:</label>
+            <input type="date" id="filter-start-date" name="filter-start-date" style="width: calc(100% - 22px); padding: 8px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+
+            <label for="filter-end-date" style="display: block; margin-bottom: 5px; font-weight: bold;">End Date:</label>
+            <input type="date" id="filter-end-date" name="filter-end-date" style="width: calc(100% - 22px); padding: 8px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
             <label>
                 <input type="checkbox" name="type" value="UNFALL" checked onchange="checkFilters(this)"> Unfälle
             </label>
@@ -74,10 +79,39 @@
             <h2>Legende</h2>
             <button class="close-btn" onclick="toggleLegendMenu()">✕</button>
         </div>
-        <ul>
-            <li><strong>Unfall:</strong> Autounfälle.</li>
-            <li><strong>Behördliche Einsätze:</strong> Einsätze, die von Behörden ausgeführt werden (z.B., Feuerwehreinsatz).</li>
-        </ul>
+        <div style="padding: 20px;">
+            <h4>Date Filter:</h4>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">
+                Use the 'Start Date' and 'End Date' selectors in the 'Filters' menu to display events that occurred within a specific time period.
+            </p>
+
+            <hr style="margin: 20px 0;">
+
+            <h4>Marker Appearance (by Age):</h4>
+            <p style="font-size: 0.9em; color: #555; margin-bottom: 15px;">Markers change color and transparency based on how old the event is.</p>
+            <ul style="list-style-type: none; padding-left: 0;">
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(0, 255, 0); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Today / Future:</strong> Bright Green (Full Opacity)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(0, 255, 0), rgb(255, 255, 0)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Up to 1 Week Old:</strong> Green to Yellow (Opacity: 0.9)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(255, 255, 0), rgb(255, 0, 0)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>1 to 2 Weeks Old:</strong> Yellow to Red (Opacity: 0.8)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-image: linear-gradient(to right, rgb(255, 0, 0), rgb(128, 128, 128)); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>2 Weeks to 1 Month Old:</strong> Red to Grey (Opacity: 0.65)</div>
+                </li>
+                <li style="margin-bottom: 10px; display: flex; align-items: center;">
+                    <span style="display: inline-block; width: 15px; height: 15px; border-radius: 50%; background-color: rgb(200, 200, 200); border: 1px solid #ccc; margin-right: 10px;"></span>
+                    <div><strong>Older than 1 Month:</strong> Light Grey (Opacity: 0.5)</div>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Sidebar für neueste Events -->
@@ -91,17 +125,7 @@
         </div>
     </div>
     
-    <div id="latest-events-sidebar" class="slide-menu">
-        <div class="menu-header">
-            <h2>Letzte Ereignisse</h2>
-            <button class="close-btn" onclick="toggleLatestEventsSidebar()">✕</button>
-        </div>
-        <div id="latest-events-content">
-            <p>Keien Ereignisse vorhanden.</p>
-        </div>
-    </div>
-
-        <!-- Sidebar -->
+    <!-- Sidebar -->
     <div id="sidebar">
         <div class="close-btn" onclick="toggleSidebar()">✕</div>
         <h2>Details zu Ereignissen</h2>
@@ -110,9 +134,10 @@
         </div>
     </div>
 
-        <!-- Button to Open the Latest Events Sidebar -->
+    <!-- Button to Open the Latest Events Sidebar -->
     <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Letzte Ereignisse</button>
 
     <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+</html>
