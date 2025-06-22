@@ -662,3 +662,254 @@ body {
     font-size: 0.85em;
     color: #4a5568;
 }
+
+/* ----------------------
+   Hotspot Highlighting Styles
+   ---------------------- */
+.hotspot-overlay {
+    position: absolute;
+    background: rgba(255, 65, 87, 0.2);
+    border: 3px solid #ff4157;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    animation: hotspotPulse 2s infinite;
+}
+
+@keyframes hotspotPulse {
+    0% { 
+        transform: scale(1);
+        opacity: 0.6;
+    }
+    50% { 
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
+    100% { 
+        transform: scale(1);
+        opacity: 0.6;
+    }
+}
+
+.hotspot-exit-button {
+    position: fixed;
+    top: 80px;
+    right: 25px;
+    background: linear-gradient(to bottom, #ff4157, #ff6b7d);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 65, 87, 0.3);
+    z-index: 1002;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: none;
+}
+
+/* Adjust exit button position when stats panel is active */
+.stats-panel.active ~ .hotspot-exit-button {
+    right: 330px; /* 380px (stats panel width) + 25px margin */
+}
+
+.hotspot-exit-button:hover {
+    background: linear-gradient(to bottom, #ff6b7d, #ff8a9b);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(255, 65, 87, 0.4);
+}
+
+.hotspot-exit-button.show {
+    display: block;
+    animation: slideInFromRight 0.3s ease;
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Hotspot Info Panel */
+.hotspot-info {
+    position: fixed;
+    top: 140px;
+    right: 25px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1002;
+    max-width: 250px;
+    display: none;
+    transition: right 0.3s ease;
+}
+
+/* Hide hotspot info when sidebar is active to avoid duplication */
+.sidebar.active ~ .hotspot-info {
+    display: none !important;
+}
+
+/* Adjust hotspot info position when stats panel is active */
+body:has(.stats-panel.active) .hotspot-info {
+    right: 330px; /* 380px (stats panel width) + 25px margin */
+}
+
+.hotspot-info.show {
+    display: block;
+    animation: slideInFromRight 0.3s ease;
+}
+
+.hotspot-info h4 {
+    margin: 0 0 10px 0;
+    color: #2d3748;
+    font-size: 1em;
+}
+
+.hotspot-info .hotspot-item {
+    margin-bottom: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9em;
+}
+
+.hotspot-info .hotspot-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.hotspot-label {
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.hotspot-value {
+    color: #2d3748;
+    float: right;
+}
+
+/* Hotspot Event Details Expansion */
+.hotspot-event-item {
+    transition: all 0.3s ease;
+}
+
+.hotspot-event-item.expanded {
+    background: #edf2f7 !important;
+}
+
+.event-details-toggle {
+    background: #4299e1;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.2s ease;
+}
+
+.event-details-toggle:hover {
+    background: #3182ce;
+}
+
+.event-expanded-details {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    border-left: 3px solid #4299e1;
+    font-size: 0.8em;
+    display: none;
+}
+
+.event-expanded-details.show {
+    display: block;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 200px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+}
+
+.event-detail-row {
+    margin: 4px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.event-detail-label {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.event-detail-value {
+    color: #2d3748;
+    text-align: right;
+}
+
+/* Selection event styling */
+.selected-event-item {
+    padding: 10px;
+    margin: 8px 0;
+    background: #f7fafc;
+    border-radius: 6px;
+    border-left: 4px solid #4299e1;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.selected-event-item.expanded {
+    background: #edf2f7 !important;
+}
+
+.selected-event-item:hover {
+    background: #eef3f8;
+    transform: translateY(-1px);
+}
+
+.hotspot-info.at-edge {
+    right: 0 !important;
+    transition: right 0.3s ease;
+}
+.hotspot-info.offset {
+    right: 25px !important;
+    transition: right 0.3s ease;
+}
+
+.hotspot-info-panel {
+    position: absolute;
+    top: 1rem;
+    background-color: rgba(40, 40, 40, 0.9);
+    color: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    width: 250px;
+    display: none; 
+    transition: right 0.3s ease-in-out;
+}
+
+.hotspot-info-panel.show {
+    display: block;
+    animation: slideInFromRight 0.3s ease;
+}

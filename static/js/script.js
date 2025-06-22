@@ -36,8 +36,7 @@ const AppState = {
         }
         window.geoJsonData.features.push(data);
         applyFilters();
-      },
-    },
+      },    },
   
     heat: {
       sourceId: 'heatmap-data',
@@ -47,7 +46,16 @@ const AppState = {
     points: {
       sourceId: 'points-data',
       layerId: 'points-layer'
-    },    districts: {
+    },
+    
+    // Hotspot highlighting state
+    hotspotView: {
+      isActive: false,
+      overlays: [],
+      currentHotspots: []
+    },
+    
+    districts: {
       'Eimsbüttel': {
         'Schanzenviertel': [9.9638, 53.5643],
         'Hoheluft-West': [9.9736, 53.5794],
@@ -375,49 +383,167 @@ function showMultipleEventDetails(events) {
 
     const eventsList = document.getElementById('selected-events-list');
     
-    events.forEach((event, index) => {
-        const formattedDate = event.date.toLocaleString('de-DE', {
+    // Entferne doppelte Events anhand einer eindeutigen ID oder Koordinaten+Datum
+    const seen = new Set();
+    const uniqueEvents = events.filter(event => {
+        // Annahme: Kombination aus Koordinaten und Datum ist eindeutig
+        const key = `${event.geometry?.coordinates?.join(',') || event.coordinates?.join(',')}_${event.properties?.date || event.date}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+      uniqueEvents.forEach((event, index) => {
+        // Handle both old and new data structures
+        const eventDate = event.properties?.date || event.date;
+        const eventTitle = event.properties?.name || event.title || 'UNFALL';
+        const eventCoords = event.geometry?.coordinates || event.coordinates;
+        const eventDescription = event.properties?.description || event.description;
+        
+        const formattedDate = new Date(eventDate).toLocaleString('de-DE', {
             weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit'
-        });        const eventDiv = document.createElement('div');
+        });
+          const eventDiv = document.createElement('div');
         eventDiv.className = 'selected-event-item';
-        eventDiv.innerHTML = `
-            <div class="event-header" onclick="toggleEventDetails(${index})">
-                <h3>${event.title} <span class="toggle-icon">▼</span></h3>
-            </div>
-            <div class="event-details" id="event-details-${index}" style="display: none;">
-                <p><strong>Date:</strong> ${formattedDate}</p>
-                <p><strong>Coordinates:</strong> ${event.coordinates[1].toFixed(6)}, ${event.coordinates[0].toFixed(6)}</p>
-                <p><strong>Location:</strong> <a href="#" id="multi-event-location-${index}" style="color: #4c51bf; text-decoration: underline; cursor: pointer;" data-lng="${event.coordinates[0]}" data-lat="${event.coordinates[1]}">Click to fetch location</a></p>
-                <p>${event.description || 'No description available.'}</p>
-                <button onclick="flyToEvent(${event.coordinates[0]}, ${event.coordinates[1]})" class="fly-to-btn">Zu diesem Ereignis</button>
-            </div>
+        eventDiv.style.cssText = `
+            margin: 12px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 12px;
+            border-left: 4px solid #ff4157;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
         `;
-        eventsList.appendChild(eventDiv);
-
-        // Add event listener for location fetching in multi-event view
+        
+        // Add hover effects
+        eventDiv.addEventListener('mouseenter', () => {
+            eventDiv.style.transform = 'translateY(-2px)';
+            eventDiv.style.boxShadow = '0 8px 25px rgba(255, 65, 87, 0.15)';
+            eventDiv.style.borderLeftColor = '#e53e3e';
+        });
+        
+        eventDiv.addEventListener('mouseleave', () => {
+            eventDiv.style.transform = 'translateY(0)';
+            eventDiv.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+            eventDiv.style.borderLeftColor = '#ff4157';
+        });
+        
+        eventDiv.innerHTML = `
+            <div class="event-header" style="padding: 15px; cursor: pointer; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid #e2e8f0; transition: background 0.2s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 1.1em; font-weight: 600;">${eventTitle}</h3>
+                        <div style="font-size: 0.9em; color: #718096; margin-top: 6px; font-weight: 500;">${formattedDate}</div>
+                    </div>
+                    <span class="toggle-icon" style="color: #ff4157; font-size: 1.2em; font-weight: bold; transition: transform 0.2s ease;">▼</span>
+                </div>
+            </div>            <div class="event-details" id="event-details-${index}" style="display: none; padding: 20px; background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);">
+                <div style="display: grid; gap: 15px;">
+                    <div style="padding: 12px; background: rgba(255, 65, 87, 0.05); border-radius: 8px; border-left: 3px solid #ff4157;">
+                        <strong style="color: #e53e3e; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Typ:</strong> 
+                        <div style="color: #2d3748; font-weight: 600; margin-top: 4px;">${eventTitle}</div>
+                    </div>
+                    <div style="padding: 12px; background: rgba(74, 85, 104, 0.05); border-radius: 8px; border-left: 3px solid #4a5568;">
+                        <strong style="color: #4a5568; font-size: 0.9em, text-transform: uppercase; letter-spacing: 0.5px;">Datum:</strong> 
+                        <div style="color: #2d3748; font-weight: 500; margin-top: 4px;">${formattedDate}</div>
+                    </div>
+                    <div style="padding: 12px; background: rgba(56, 178, 172, 0.05); border-radius: 8px; border-left: 3px solid #38b2ac;">
+                        <strong style="color: #38b2ac; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Koordinaten:</strong> 
+                        <div style="color: #2d3748; font-weight: 500; margin-top: 4px; font-family: monospace;">${eventCoords[1].toFixed(6)}, ${eventCoords[0].toFixed(6)}</div>
+                    </div>
+                    <div style="padding: 12px; background: rgba(76, 81, 191, 0.05); border-radius: 8px; border-left: 3px solid #4c51bf;">
+                        <strong style="color: #4c51bf; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Ort:</strong> 
+                        <div style="margin-top: 8px;">
+                            <a href="#" id="multi-event-location-${index}" style="color: #4c51bf; text-decoration: none; font-weight: 500; padding: 6px 12px; background: rgba(76, 81, 191, 0.1); border-radius: 6px; display: inline-block; transition: all 0.2s ease; cursor: pointer;" data-lng="${eventCoords[0]}" data-lat="${eventCoords[1]}">📍 Ort laden...</a>
+                        </div>
+                    </div>
+                    ${eventDescription ? `
+                        <div style="padding: 12px; background: rgba(113, 128, 150, 0.05); border-radius: 8px; border-left: 3px solid #718096;">
+                            <strong style="color: #718096; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Beschreibung:</strong>
+                            <div style="margin-top: 8px; padding: 12px; background: rgba(74, 85, 104, 0.08); border-radius: 8px; font-size: 0.95em; color: #2d3748; line-height: 1.6; border: 1px solid rgba(74, 85, 104, 0.1);">
+                                ${eventDescription}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div style="margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                    <button onclick="flyToEvent(${eventCoords[0]}, ${eventCoords[1]})" 
+                            style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: 600; box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3); transition: all 0.2s ease;"
+                            onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(72, 187, 120, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(72, 187, 120, 0.3)'">
+                        🗺️ Zu diesem Ereignis
+                    </button>
+                </div>
+            </div>`;
+        eventsList.appendChild(eventDiv);        // Add click handler for event header to toggle details
+        const eventHeader = eventDiv.querySelector('.event-header');
+        const eventDetails = eventDiv.querySelector(`#event-details-${index}`);
+        const toggleIcon = eventDiv.querySelector('.toggle-icon');
+        
+        if (eventHeader && eventDetails && toggleIcon) {
+            // Add header hover effect
+            eventHeader.addEventListener('mouseenter', () => {
+                eventHeader.style.background = 'linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)';
+            });
+            
+            eventHeader.addEventListener('mouseleave', () => {
+                eventHeader.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)';
+            });
+            
+            eventHeader.addEventListener('click', () => {
+                if (eventDetails.style.display === 'none') {
+                    eventDetails.style.display = 'block';
+                    toggleIcon.textContent = '▲';
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                    eventHeader.style.borderBottomLeftRadius = '0';
+                    eventHeader.style.borderBottomRightRadius = '0';
+                } else {
+                    eventDetails.style.display = 'none';
+                    toggleIcon.textContent = '▼';
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                    eventHeader.style.borderBottomLeftRadius = '12px';
+                    eventHeader.style.borderBottomRightRadius = '12px';
+                }
+            });
+        }        // Add event listener for location fetching in multi-event view
         const locationLink = eventDiv.querySelector(`#multi-event-location-${index}`);
         if (locationLink) {
+            // Add hover effect for location link
+            locationLink.addEventListener('mouseenter', () => {
+                locationLink.style.background = 'rgba(76, 81, 191, 0.2)';
+                locationLink.style.transform = 'translateY(-1px)';
+            });
+            
+            locationLink.addEventListener('mouseleave', () => {
+                locationLink.style.background = 'rgba(76, 81, 191, 0.1)';
+                locationLink.style.transform = 'translateY(0)';
+            });
+            
             locationLink.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const link = e.currentTarget;
                 const lng = parseFloat(link.dataset.lng);
                 const lat = parseFloat(link.dataset.lat);
                 
-                link.textContent = 'Loading...';
+                link.textContent = '⏳ Loading...';
                 link.style.textDecoration = 'none';
                 link.style.cursor = 'default';
+                link.style.background = 'rgba(113, 128, 150, 0.1)';
+                link.style.color = '#718096';
                 
                 const placeName = await reverseGeocode(lng, lat);
                 
                 if (placeName.startsWith("Could not") || placeName.startsWith("Location details")) {
-                    link.textContent = placeName;
-                    link.style.color = '#718096';
+                    link.textContent = '❌ ' + placeName;
+                    link.style.color = '#e53e3e';
+                    link.style.background = 'rgba(229, 62, 62, 0.1)';
                 } else {
-                    link.textContent = placeName;
-                    link.style.textDecoration = 'underline';
+                    link.textContent = '📍 ' + placeName;
+                    link.style.textDecoration = 'none';
                     link.style.cursor = 'pointer';
                     link.style.color = '#4c51bf';
+                    link.style.background = 'rgba(76, 81, 191, 0.1)';
                     
                     // Add click event to fly to location
                     link.addEventListener('click', (ev) => {
@@ -431,23 +557,7 @@ function showMultipleEventDetails(events) {
                 }
             }, { once: true });
         }
-    });
-
-    sidebar.classList.add('active');
-}
-
-// Toggle individual event details in multi-selection view
-function toggleEventDetails(index) {
-    const details = document.getElementById(`event-details-${index}`);
-    const icon = document.querySelector(`#selected-events-list .event-header:nth-child(${(index * 2) + 1}) .toggle-icon`);
-    
-    if (details.style.display === 'none') {
-        details.style.display = 'block';
-        icon.textContent = '▲';
-    } else {
-        details.style.display = 'none';
-        icon.textContent = '▼';
-    }
+    });    sidebar.classList.add('active');
 }
 
 // Fly to specific event coordinates
@@ -580,7 +690,9 @@ function getCurrentlyFilteredFeatures() {
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.remove('active');
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('active');
+    adjustHotspotControlsPosition();
 }
 
 function applyFilters() {
@@ -1228,6 +1340,336 @@ function findDensestZone(features) {
         // Convert coordinates to approximate district (simplified)
         const districts = ['Hamburg-Mitte', 'Altona', 'Eimsbüttel', 'Hamburg-Nord', 'Wandsbek', 'Bergedorf', 'Harburg'];
         return districts[Math.floor(Math.random() * districts.length)] + ` (${maxCount} Events)`;    }
+      return 'Zentral Hamburg';
+}
+
+// Hotspot Highlighting Functions
+function toggleHotspotView() {
+    if (AppState.hotspotView.isActive) {
+        exitHotspotView();
+    } else {
+        enterHotspotView();
+    }
+}
+
+function enterHotspotView() {
+    const currentFeatures = getCurrentlyFilteredFeatures();
+    const hotspots = calculateHotspots(currentFeatures);
     
-    return 'Zentral Hamburg';
+    if (hotspots.length === 0) {
+        alert('Keine Hotspots in den aktuell sichtbaren Events gefunden.');
+        return;
+    }
+    
+    AppState.hotspotView.isActive = true;
+    AppState.hotspotView.currentHotspots = hotspots;
+    
+    // Create visual overlays for each hotspot
+    createHotspotOverlays(hotspots);
+    
+    // Show controls
+    document.getElementById('hotspot-exit-button').classList.add('show');
+    document.getElementById('hotspot-info').classList.add('show');
+    
+    // Update info panel
+    updateHotspotInfo(hotspots);
+    
+    // Change cursor to indicate special mode
+    map.getCanvas().style.cursor = 'crosshair';
+    
+    adjustHotspotControlsPosition();
+    
+    console.log(`Hotspot-Ansicht aktiviert: ${hotspots.length} Hotspots gefunden`);
+}
+
+function exitHotspotView() {
+    AppState.hotspotView.isActive = false;
+    
+    // Remove all overlays
+    AppState.hotspotView.overlays.forEach(overlay => {
+        if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+    });
+    AppState.hotspotView.overlays = [];
+    AppState.hotspotView.currentHotspots = [];
+    
+    // Hide controls
+    const hotspotExitButton = document.getElementById('hotspot-exit-button');
+    if (hotspotExitButton) {
+        hotspotExitButton.classList.remove('show');
+        hotspotExitButton.style.right = ''; // Reset position
+    }
+    const hotspotInfo = document.getElementById('hotspot-info');
+    if (hotspotInfo) {
+        hotspotInfo.classList.remove('show');
+        hotspotInfo.style.right = ''; // Reset position
+    }
+    
+    // Reset cursor
+    map.getCanvas().style.cursor = '';
+    
+    console.log('Hotspot-Ansicht beendet');
+}
+
+function createHotspotOverlays(hotspots) {
+    const mapContainer = map.getContainer();
+    
+    hotspots.forEach((cluster, index) => {
+        // Calculate center of cluster
+        const centerLat = cluster.reduce((sum, event) => sum + event.geometry.coordinates[1], 0) / cluster.length;
+        const centerLng = cluster.reduce((sum, event) => sum + event.geometry.coordinates[0], 0) / cluster.length;
+        
+        // Calculate cluster bounds
+        const bounds = {
+            minLat: Math.min(...cluster.map(e => e.geometry.coordinates[1])),
+            maxLat: Math.max(...cluster.map(e => e.geometry.coordinates[1])),
+            minLng: Math.min(...cluster.map(e => e.geometry.coordinates[0])),
+            maxLng: Math.max(...cluster.map(e => e.geometry.coordinates[0]))
+        };
+        
+        // Convert to screen coordinates
+        const centerPoint = map.project([centerLng, centerLat]);
+        const topLeft = map.project([bounds.minLng, bounds.maxLat]);
+        const bottomRight = map.project([bounds.maxLng, bounds.minLat]);
+        
+        // Calculate appropriate radius (minimum 30px, scaled by cluster size)
+        const baseRadius = 30;
+        const sizeMultiplier = Math.sqrt(cluster.length) * 10;
+        const boundingRadius = Math.max(
+            Math.abs(bottomRight.x - topLeft.x) / 2,
+            Math.abs(bottomRight.y - topLeft.y) / 2
+        );
+        const radius = Math.max(baseRadius, Math.min(sizeMultiplier, boundingRadius + 20));
+        
+        // Create overlay element
+        const overlay = document.createElement('div');
+        overlay.className = 'hotspot-overlay';
+        overlay.style.left = (centerPoint.x - radius) + 'px';
+        overlay.style.top = (centerPoint.y - radius) + 'px';
+        overlay.style.width = (radius * 2) + 'px';
+        overlay.style.height = (radius * 2) + 'px';
+        overlay.title = `Hotspot ${index + 1}: ${cluster.length} Events`;
+        
+        // Add click handler for detailed view
+        overlay.addEventListener('click', () => {
+            showHotspotDetails(cluster, index + 1);
+        });
+        overlay.style.pointerEvents = 'auto';
+        overlay.style.cursor = 'pointer';
+        
+        mapContainer.appendChild(overlay);
+        AppState.hotspotView.overlays.push(overlay);
+    });
+    
+    // Update overlays when map moves
+    map.on('move', updateHotspotOverlayPositions);
+    map.on('zoom', updateHotspotOverlayPositions);
+}
+
+function updateHotspotOverlayPositions() {
+    if (!AppState.hotspotView.isActive) return;
+    
+    AppState.hotspotView.currentHotspots.forEach((cluster, index) => {
+        const overlay = AppState.hotspotView.overlays[index];
+        if (!overlay) return;
+        
+        // Recalculate center
+        const centerLat = cluster.reduce((sum, event) => sum + event.geometry.coordinates[1], 0) / cluster.length;
+        const centerLng = cluster.reduce((sum, event) => sum + event.geometry.coordinates[0], 0) / cluster.length;
+        
+        const centerPoint = map.project([centerLng, centerLat]);
+        const currentRadius = parseInt(overlay.style.width) / 2;
+        
+        overlay.style.left = (centerPoint.x - currentRadius) + 'px';
+        overlay.style.top = (centerPoint.y - currentRadius) + 'px';
+    });
+}
+
+function updateHotspotInfo(hotspots) {
+    const totalHotspots = hotspots.length;
+    const largestCluster = Math.max(...hotspots.map(cluster => cluster.length));
+    
+    document.getElementById('hotspot-total').textContent = totalHotspots;
+    document.getElementById('largest-cluster').textContent = largestCluster + ' Events';
+}
+
+function adjustHotspotControlsPosition() {
+    const hotspotInfo = document.getElementById('hotspot-info');
+    const hotspotExitButton = document.getElementById('hotspot-exit-button');
+
+    const sidebar = document.getElementById('sidebar');
+    // The sidebar width is 384px (24rem).
+    const sidebarWidth = 384; 
+    let rightOffset = 16; // 1rem default offset from the edge
+
+    // Check if the event/hotspot details sidebar is open
+    if (sidebar && sidebar.classList.contains('active')) {
+        rightOffset += sidebarWidth;
+    }
+
+    if (hotspotInfo && hotspotInfo.classList.contains('show')) {
+        hotspotInfo.style.right = `${rightOffset}px`;
+    }
+    
+    if (hotspotExitButton && hotspotExitButton.classList.contains('show')) {
+        hotspotExitButton.style.right = `${rightOffset}px`;
+    }
+}
+
+function showHotspotDetails(cluster, hotspotNumber) {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('event-content');
+    
+    // Remove duplicates based on coordinates and date
+    const uniqueEvents = [];
+    const seen = new Set();
+    
+    cluster.forEach(event => {
+        const key = `${event.geometry.coordinates[0]}-${event.geometry.coordinates[1]}-${event.properties.date}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            uniqueEvents.push(event);
+        }
+    });
+    
+    content.innerHTML = `
+        <h2>Details zu Ereignissen</h2>
+        <h3>Hotspot ${hotspotNumber} Details</h3>
+        <p><strong>Anzahl Events:</strong> ${uniqueEvents.length}</p>
+        <p><strong>Radius:</strong> 500m</p>
+        <div id="hotspot-events-list" style="margin-top: 20px;">
+            <h3>Events in diesem Hotspot:</h3>
+        </div>
+    `;
+    
+    const eventsList = document.getElementById('hotspot-events-list');
+    
+    uniqueEvents.forEach((event, index) => {
+        const eventDate = new Date(event.properties.date).toLocaleString('de-DE', {
+            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+        
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'hotspot-event-item';
+        eventDiv.id = `hotspot-event-${index}`;
+        eventDiv.style.cssText = `
+            padding: 10px;
+            margin: 8px 0;
+            background: #f7fafc;
+            border-radius: 6px;
+            border-left: 4px solid #ff4157;
+            cursor: pointer;
+        `;
+        
+        eventDiv.innerHTML = `
+            <div style="font-weight: bold; color: #2d3748;">${event.properties?.name || event.title || 'UNFALL'}</div>
+            <div style="font-size: 0.9em; color: #4a5568; margin-top: 4px;">${eventDate}</div>
+            <div style="font-size: 0.85em; color: #718096; margin-top: 2px;">
+                ${(event.geometry?.coordinates?.[1] || event.coordinates?.[1]).toFixed(6)}, ${(event.geometry?.coordinates?.[0] || event.coordinates?.[0]).toFixed(6)}
+            </div>
+            <button class="event-details-toggle" data-event-index="${index}">
+                Details anzeigen
+            </button>
+            <div class="event-expanded-details" id="hotspot-event-details-${index}" style="display:none;">
+                <div class="event-detail-row">
+                    <span class="event-detail-label">Typ:</span>
+                    <span class="event-detail-value">${event.properties?.name || event.title || 'UNFALL'}</span>
+                </div>
+                <div class="event-detail-row">
+                    <span class="event-detail-label">Datum:</span>
+                    <span class="event-detail-value">${eventDate}</span>
+                </div>
+                <div class="event-detail-row">
+                    <span class="event-detail-label">Koordinaten:</span>
+                    <span class="event-detail-value">${(event.geometry?.coordinates?.[1] || event.coordinates?.[1]).toFixed(6)}<br>${(event.geometry?.coordinates?.[0] || event.coordinates?.[0]).toFixed(6)}</span>
+                </div>
+                ${event.properties?.description || event.description ? `
+                    <div class="event-detail-row" style="margin-top: 8px;">
+                        <span class="event-detail-label">Beschreibung:</span>
+                    </div>
+                    <div style="margin-top: 4px; padding: 6px; background: rgba(74, 85, 104, 0.1); border-radius: 4px; font-size: 0.85em; color: #2d3748; line-height: 1.4;">
+                        ${event.properties?.description || event.description}
+                    </div>
+                ` : ''}
+                ${event.properties?.severity ? `
+                    <div class="event-detail-row">
+                        <span class="event-detail-label">Schweregrad:</span>
+                        <span class="event-detail-value">${event.properties.severity}</span>
+                    </div>
+                ` : ''}
+                <div style="margin-top: 8px; padding: 4px 0; border-top: 1px solid #e2e8f0;">
+                    <button onclick="map.flyTo({center: [${(event.geometry?.coordinates?.[0] || event.coordinates?.[0])}, ${(event.geometry?.coordinates?.[1] || event.coordinates?.[1])}], zoom: 16, speed: 0.8})" 
+                            style="background: #48bb78; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; cursor: pointer;">
+                        Auf Karte anzeigen
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add click handler for the main event div (excluding the button)
+        eventDiv.addEventListener('click', (e) => {
+            if (e.target.classList.contains('event-details-toggle') || e.target.tagName === 'BUTTON') {
+                return; // Don't trigger map fly-to if clicking on buttons
+            }
+            map.flyTo({
+                center: event.geometry.coordinates,
+                zoom: 16,
+                speed: 0.8
+            });
+        });
+        
+        // Toggle-Button-Handler für Details
+        const toggleBtn = eventDiv.querySelector('.event-details-toggle');
+        const detailsDiv = eventDiv.querySelector(`#hotspot-event-details-${index}`);
+        if (toggleBtn && detailsDiv) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (detailsDiv.style.display === 'none') {
+                    detailsDiv.style.display = 'block';
+                    toggleBtn.textContent = 'Details verbergen';
+                } else {
+                    detailsDiv.style.display = 'none';
+                    toggleBtn.textContent = 'Details anzeigen';
+                }
+            });
+        }
+        
+        eventsList.appendChild(eventDiv);
+    });
+    
+    sidebar.classList.add('active');
+    adjustHotspotControlsPosition();
+}
+
+// Toggle event details expansion in hotspot view
+function toggleHotspotEventDetails(eventIndex, buttonEvent) {
+    // Prevent event bubbling to parent div
+    if (buttonEvent) {
+        buttonEvent.stopPropagation();
+    }
+    
+    const detailsDiv = document.getElementById(`hotspot-event-details-${eventIndex}`);
+    const toggleButton = document.querySelector(`[data-event-index="${eventIndex}"]`);
+    const eventDiv = document.getElementById(`hotspot-event-${eventIndex}`);
+    
+    if (!detailsDiv || !toggleButton) {
+        console.error('Event details elements not found');
+        return;
+    }
+    
+    const isExpanded = detailsDiv.style.display === 'block';
+    
+    if (isExpanded) {
+        // Collapse
+        detailsDiv.style.display = 'none';
+        toggleButton.textContent = 'Details anzeigen';
+        eventDiv.classList.remove('expanded');
+    } else {
+        // Expand
+        detailsDiv.style.display = 'block';
+        toggleButton.textContent = 'Details verbergen';
+        eventDiv.classList.add('expanded');
+    }
 }

@@ -150,9 +150,8 @@
                     <div class="stat-card">
                         <div class="stat-value" id="total-visible">0</div>
                         <div class="stat-label">Sichtbare Events</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="hotspot-count">0</div>
+                    </div>                    <div class="stat-card">
+                        <div class="stat-value" id="hotspot-count" style="cursor: pointer; color: #4c51bf;" onclick="toggleHotspotView()" title="Click to highlight hotspots">0</div>
                         <div class="stat-label">Hotspots erkannt</div>
                     </div>
                 </div>
@@ -242,10 +241,29 @@
             <p>Wähle eine Ereignis aus, um Details zu sehen.</p>
         </div>
     </div>    <!-- Button to Open the Latest Events Sidebar -->
-    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Letzte Ereignisse</button>
-
-    <!-- Rectangle Selection Toggle Button -->
+    <button id="latest-events-toggle" onclick="toggleLatestEventsSidebar()">Letzte Ereignisse</button>    <!-- Rectangle Selection Toggle Button -->
     <button id="selection-toggle" onclick="toggleRectangleSelection()">📦 Auswahl</button>
+
+    <!-- Hotspot View Controls -->
+    <button id="hotspot-exit-button" class="hotspot-exit-button" onclick="exitHotspotView()">✕ Hotspot-Ansicht beenden</button>
+    
+    <div id="hotspot-info" class="hotspot-info">
+        <h4>Hotspot-Details</h4>
+        <div id="hotspot-details-content">
+            <div class="hotspot-item">
+                <span class="hotspot-label">Anzahl Hotspots:</span>
+                <span class="hotspot-value" id="hotspot-total">0</span>
+            </div>
+            <div class="hotspot-item">
+                <span class="hotspot-label">Größter Cluster:</span>
+                <span class="hotspot-value" id="largest-cluster">0 Events</span>
+            </div>
+            <div class="hotspot-item">
+                <span class="hotspot-label">Radius:</span>
+                <span class="hotspot-value">500m</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Eigenes JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
