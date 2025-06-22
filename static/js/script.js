@@ -297,6 +297,14 @@ function toggleModeChange() {
     `<h3>${AppState.modes[AppState.currentMode]}</h3>`;
 }
 
+// 9.1 Light/Dark Mode Toggle
+function toggleLightDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    document.querySelector('#light-dark-toggle h3').textContent = isDarkMode ? 'Light Mode' : 'Dark Mode';
+    localStorage.setItem('ui-theme', isDarkMode ? 'dark' : 'light');
+}
+
 // New helper function for reverse geocoding
 async function reverseGeocode(lng, lat) {
     try {
@@ -731,21 +739,51 @@ function applyFilters() {
         const oneDay = 1000 * 60 * 60 * 24;
         const daysDiff = timeDiff / oneDay;
 
-        let color = 'rgb(200, 200, 200)'; // Default: Light Grey
-        if (daysDiff <= 0) {
-            color = 'rgb(0, 255, 0)';
-        } else if (daysDiff <= 7) {
-            const ratio = daysDiff / 7;
-            const red = Math.round(255 * ratio);
-            color = `rgb(${red}, 255, 0)`;
-        } else if (daysDiff <= 14) {
-            const ratio = (daysDiff - 7) / 7;
-            const green = Math.round(255 * (1 - ratio));
-            color = `rgb(255, ${green}, 0)`;
-        } else if (daysDiff <= 30) {
-            const ratio = (daysDiff - 14) / 16;
-            const colorValue = Math.round(255 - (127 * ratio));
-            color = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+        const type = feature.properties.name;
+        let color;
+
+        if (type === 'UNFALL') {
+            // Existing logic for accidents (green -> yellow -> red)
+            color = 'rgb(200, 200, 200)'; // Default: Light Grey
+            if (daysDiff <= 0) {
+                color = 'rgb(0, 255, 0)';
+            } else if (daysDiff <= 7) {
+                const ratio = daysDiff / 7;
+                const red = Math.round(255 * ratio);
+                color = `rgb(${red}, 255, 0)`;
+            } else if (daysDiff <= 14) {
+                const ratio = (daysDiff - 7) / 7;
+                const green = Math.round(255 * (1 - ratio));
+                color = `rgb(255, ${green}, 0)`;
+            } else if (daysDiff <= 30) {
+                const ratio = (daysDiff - 14) / 16;
+                const colorValue = Math.round(255 - (127 * ratio));
+                color = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+            }
+        } else { // AuthorityOperation
+            // New logic for operations (blue -> purple -> magenta)
+            color = 'rgb(200, 200, 200)'; // Default: Light Grey
+            if (daysDiff <= 0) {
+                color = 'rgb(0, 191, 255)'; // Bright Blue
+            } else if (daysDiff <= 7) {
+                // Bright Blue to Purple
+                const ratio = daysDiff / 7;
+                const green = Math.round(191 * (1 - ratio));
+                color = `rgb(150, ${green}, 255)`;
+            } else if (daysDiff <= 14) {
+                // Purple to Magenta
+                const ratio = (daysDiff - 7) / 7;
+                const red = Math.round(150 + (105 * ratio));
+                const green = 0;
+                color = `rgb(${red}, ${green}, 255)`;
+            } else if (daysDiff <= 30) {
+                // Magenta to Grey
+                const ratio = (daysDiff - 14) / 16;
+                const red = Math.round(255 - (127 * ratio));
+                const green = Math.round(128 * ratio);
+                const blue = Math.round(255 - (127 * ratio));
+                color = `rgb(${red}, ${green}, ${blue})`;
+            }
         }
         feature.properties.color = color;
 
@@ -995,7 +1033,7 @@ function updateLatestEventsList(features) {
                     });
                     link.parentNode.replaceChild(newLink, link);
                 }
-            }, { once: true });
+            });
         }
     });
 }
@@ -1031,56 +1069,48 @@ function toggleRectangleSelection() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved UI theme
+    const savedUiTheme = localStorage.getItem('ui-theme');
+    if (savedUiTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const toggleButton = document.querySelector('#light-dark-toggle h3');
+        if (toggleButton) {
+            toggleButton.textContent = 'Light Mode';
+        }
+    }
+
+    // Set default dates for filters
+    const today = new Date();
+    const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30));
+    
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
     const startDateInput = document.getElementById('filter-start-date');
     const endDateInput = document.getElementById('filter-end-date');
 
-    // Sorting is now handled by prepending new events in addLatestEvent.
-    // The flex-direction: column-reverse style is no longer needed.
-
-    // Set default start date to 30 days ago
-    if (startDateInput) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        startDateInput.value = thirtyDaysAgo.toISOString().split('T')[0];
-    }
-    
-    // Set default end date to today
-    if (endDateInput) {
-        const today = new Date();
-        endDateInput.value = today.toISOString().split('T')[0];
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+        endDateInput.value = formatDate(today);
     }
 
-    if (startDateInput) {
-        startDateInput.addEventListener('change', applyFilters);
+    // Initial filter application on page load
+    // Note: This might be called again in map.on('load'), which is fine.
+    // It ensures filters are ready even if map load is delayed.
+    if (window.geoJsonData) {
+       applyFilters();
     }
-    if (endDateInput) {
-        endDateInput.addEventListener('change', applyFilters);
-    }
-
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');    typeCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', applyFilters);
-    });
-
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        // Press 'S' to toggle selection mode
-        if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-            const activeElement = document.activeElement;
-            // Don't trigger if user is typing in an input field
-            if (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                toggleRectangleSelection();
-            }
-        }
-        
-        // Press 'Escape' to end selection mode
-        if (e.key === 'Escape' && AppState.selection.isSelecting) {
-            e.preventDefault();
-            endRectangleSelection();
-            const button = document.getElementById('selection-toggle');
-            button.textContent = '📦 Auswahl';            button.classList.remove('active');
-        }
-    });
 });
 
 // Stats Panel Functions
