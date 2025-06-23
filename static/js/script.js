@@ -457,7 +457,7 @@ function showMultipleEventDetails(events) {
                         <div style="color: #2d3748; font-weight: 500; margin-top: 4px;">${formattedDate}</div>
                     </div>
                     <div style="padding: 12px; background: rgba(56, 178, 172, 0.05); border-radius: 8px; border-left: 3px solid #38b2ac;">
-                        <strong style="color: #38b2ac; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;">Koordinaten:</strong> 
+                        <strong style="color: #38b2ac; font-size: 0.9em; text-transform: uppercase, letter-spacing: 0.5px;">Koordinaten:</strong> 
                         <div style="color: #2d3748; font-weight: 500; margin-top: 4px; font-family: monospace;">${eventCoords[1].toFixed(6)}, ${eventCoords[0].toFixed(6)}</div>
                     </div>
                     <div style="padding: 12px; background: rgba(76, 81, 191, 0.05); border-radius: 8px; border-left: 3px solid #4c51bf;">
@@ -1113,6 +1113,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Filter-Event-Listener für alle relevanten Inputs
+function setupFilterListeners() {
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
+
+    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
+    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
+    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved UI theme
+    const savedUiTheme = localStorage.getItem('ui-theme');
+    if (savedUiTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const toggleButton = document.querySelector('#light-dark-toggle h3');
+        if (toggleButton) {
+            toggleButton.textContent = 'Light Mode';
+        }
+    }
+
+    // Set default dates for filters
+    const today = new Date();
+    const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30));
+    
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+        endDateInput.value = formatDate(today);
+    }
+
+    // Initial filter application on page load
+    // Note: This might be called again in map.on('load'), which is fine.
+    // It ensures filters are ready even if map load is delayed.
+    if (window.geoJsonData) {
+       applyFilters();
+    }
+
+    setupFilterListeners();
+});
+
 // Stats Panel Functions
 function updateStatsPanel() {
     const currentFeatures = getCurrentlyFilteredFeatures();
@@ -1629,7 +1687,7 @@ function showHotspotDetails(cluster, hotspotNumber) {
                         <span class="event-detail-value">${event.properties.severity}</span>
                     </div>
                 ` : ''}
-                <div style="margin-top: 8px; padding: 4px 0; border-top: 1px solid #e2e8f0;">
+                               <div style="margin-top: 8px; padding: 4px 0; border-top: 1px solid #e2e8f0;">
                     <button onclick="map.flyTo({center: [${(event.geometry?.coordinates?.[0] || event.coordinates?.[0])}, ${(event.geometry?.coordinates?.[1] || event.coordinates?.[1])}], zoom: 16, speed: 0.8})" 
                             style="background: #48bb78; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; cursor: pointer;">
                         Auf Karte anzeigen
