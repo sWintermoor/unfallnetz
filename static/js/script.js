@@ -712,6 +712,278 @@ function toggleSidebar() {
     adjustHotspotControlsPosition();
 }
 
+// --- Filter-Event-Listener für alle relevanten Inputs ---
+function setupFilterListeners() {
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
+
+    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
+    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
+    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+}
+
+// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved UI theme
+    const savedUiTheme = localStorage.getItem('ui-theme');
+    if (savedUiTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const toggleButton = document.querySelector('#light-dark-toggle h3');
+        if (toggleButton) {
+            toggleButton.textContent = 'Light Mode';
+        }
+    }
+
+    // Set default dates for filters (format: yyyy-mm-dd)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+    };
+
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+        endDateInput.value = formatDate(today);
+    }
+
+    // Initial filter application on page load
+    if (window.geoJsonData) {
+        applyFilters();
+    }
+    setupFilterListeners();
+
+    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
+    function toggleLatestEventsSidebar() {
+        const sidebar = document.getElementById('latest-events-sidebar');
+        if (!sidebar) return;
+        sidebar.classList.toggle('active');
+    }
+
+    function toggleRectangleSelection() {
+        const button = document.getElementById('selection-toggle');
+        if (!button) return;
+        if (AppState.selection.isSelecting) {
+            // End selection mode
+            endRectangleSelection();
+            button.textContent = '📦 Auswahl';
+            button.classList.remove('active');
+        } else {
+            // Start selection mode
+            startRectangleSelection();
+            button.textContent = '❌ Beenden';
+            button.classList.add('active');
+        }
+    }
+
+    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
+    function ensureButtonListeners() {
+        const latestEventsBtn = document.getElementById('latest-events-toggle');
+        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
+        const selectionBtn = document.getElementById('selection-toggle');
+        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
+    }
+    ensureButtonListeners();
+
+    // --- NEU: MutationObserver statt DOMNodeInserted ---
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                ensureButtonListeners();
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// --- Filter-Event-Listener für alle relevanten Inputs ---
+function setupFilterListeners() {
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
+
+    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
+    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
+    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+}
+
+// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved UI theme
+    const savedUiTheme = localStorage.getItem('ui-theme');
+    if (savedUiTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const toggleButton = document.querySelector('#light-dark-toggle h3');
+        if (toggleButton) {
+            toggleButton.textContent = 'Light Mode';
+        }
+    }
+
+    // Set default dates for filters (format: yyyy-mm-dd)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+    };
+
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+        endDateInput.value = formatDate(today);
+    }
+
+    // Initial filter application on page load
+    if (window.geoJsonData) {
+        applyFilters();
+    }
+    setupFilterListeners();
+
+    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
+    function toggleLatestEventsSidebar() {
+        const sidebar = document.getElementById('latest-events-sidebar');
+        if (!sidebar) return;
+        sidebar.classList.toggle('active');
+    }
+
+    function toggleRectangleSelection() {
+        const button = document.getElementById('selection-toggle');
+        if (!button) return;
+        if (AppState.selection.isSelecting) {
+            // End selection mode
+            endRectangleSelection();
+            button.textContent = '📦 Auswahl';
+            button.classList.remove('active');
+        } else {
+            // Start selection mode
+            startRectangleSelection();
+            button.textContent = '❌ Beenden';
+            button.classList.add('active');
+        }
+    }
+
+    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
+    function ensureButtonListeners() {
+        const latestEventsBtn = document.getElementById('latest-events-toggle');
+        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
+        const selectionBtn = document.getElementById('selection-toggle');
+        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
+    }
+    ensureButtonListeners();
+
+    // --- NEU: MutationObserver statt DOMNodeInserted ---
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                ensureButtonListeners();
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved UI theme
+    const savedUiTheme = localStorage.getItem('ui-theme');
+    if (savedUiTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const toggleButton = document.querySelector('#light-dark-toggle h3');
+        if (toggleButton) {
+            toggleButton.textContent = 'Light Mode';
+        }
+    }
+
+    // Set default dates for filters (format: yyyy-mm-dd)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+    };
+
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(thirtyDaysAgo);
+        endDateInput.value = formatDate(today);
+    }
+
+    // Initial filter application on page load
+    if (window.geoJsonData) {
+        applyFilters();
+    }
+    setupFilterListeners();
+
+    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
+    function toggleLatestEventsSidebar() {
+        const sidebar = document.getElementById('latest-events-sidebar');
+        if (!sidebar) return;
+        sidebar.classList.toggle('active');
+    }
+
+    function toggleRectangleSelection() {
+        const button = document.getElementById('selection-toggle');
+        if (!button) return;
+        if (AppState.selection.isSelecting) {
+            // End selection mode
+            endRectangleSelection();
+            button.textContent = '📦 Auswahl';
+            button.classList.remove('active');
+        } else {
+            // Start selection mode
+            startRectangleSelection();
+            button.textContent = '❌ Beenden';
+            button.classList.add('active');
+        }
+    }
+
+    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
+    function ensureButtonListeners() {
+        const latestEventsBtn = document.getElementById('latest-events-toggle');
+        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
+        const selectionBtn = document.getElementById('selection-toggle');
+        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
+    }
+    ensureButtonListeners();
+
+    // --- NEU: MutationObserver statt DOMNodeInserted ---
+    const observer = new MutationObserver((mutationsList) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                ensureButtonListeners();
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// --- Fix filter logic to support both types and correct date parsing ---
 function applyFilters() {
     const startDateString = document.getElementById('filter-start-date')?.value;
     const endDateString = document.getElementById('filter-end-date')?.value;
@@ -743,8 +1015,6 @@ function applyFilters() {
     );
     const newestThreeIds = sortedByDate.slice(0, 3).map(f => f.properties.date + f.geometry.coordinates.join(','));
 
-    // Pre-calculate color and opacity for performance
-        // ...existing code...
     // Pre-calculate color and opacity for performance
     filteredFeatures.forEach(feature => {
         const eventDate = new Date(feature.properties.date);
@@ -833,7 +1103,6 @@ function applyFilters() {
         feature.properties.strokeColor = isNewest ? '#0066ff' : 'transparent';
         feature.properties.strokeWidth = isNewest ? 3 : 0;
     });
-// ...existing
 
     const currentMode = AppState.modes[AppState.currentMode];
     const showPoints = currentMode === 'Punkte' || currentMode === 'Beides';
@@ -843,7 +1112,8 @@ function applyFilters() {
     const pointsSource = map.getSource(AppState.points.sourceId);
     const pointsLayer = map.getLayer(AppState.points.layerId);
     const shadowLayer = map.getLayer(AppState.points.layerId + '-shadow');
-    const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
+    // FLIP die Reihenfolge, damit neue Events oben liegen!
+    const pointsData = { type: 'FeatureCollection', features: filteredFeatures.slice().reverse() };
 
     if (showPoints) {
         if (pointsSource) {
@@ -852,8 +1122,8 @@ function applyFilters() {
             map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
         }
 
-        if (!pointsLayer) {            // Add a larger, blurred layer underneath for a glow/shadow effect.
-            // The radius and blur are interpolated based on zoom level to ensure visibility.
+        if (!pointsLayer) {
+            // Add a larger, blurred layer underneath for a glow/shadow effect.
             map.addLayer({
                 id: AppState.points.layerId + '-shadow',
                 type: 'circle',
@@ -863,1031 +1133,42 @@ function applyFilters() {
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 20, // At zoom 10, radius is 10px
-                        22, 40  // At zoom 22, radius is 20px
+                        10, 20,
+                        22, 40
                     ],
                     'circle-color': ['get', 'color'],
                     'circle-opacity': [
                         '*',
                         ['get', 'opacity'],
-                        0.5 // Make shadow more subtle
+                        0.5
                     ],
                     'circle-blur': [
                         'interpolate',
                         ['linear'],
                         ['zoom'],
-                        10, 2.5, // At zoom 10, blur is 2.5
-                        22, 8    // At zoom 22, blur is 8
+                        10, 2.5,
+                        22, 8
                     ],
                     'circle-stroke-width': ['get', 'strokeWidth'],
                     'circle-stroke-color': ['get', 'strokeColor'],
                     'circle-stroke-opacity': 0.8
                 }
-            });// Add the main, crisp point layer on top
-            map.addLayer({
-                id: AppState.points.layerId,
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': ['get', 'radius'], // Use dynamic radius
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': ['get', 'strokeWidth'], // Blue border for newest events
-                    'circle-stroke-color': ['get', 'strokeColor']
-                }
-            });map.on('click', AppState.points.layerId, (e) => {
-                // Check if we're in selection mode
-                if (AppState.selection.isSelecting) return;
-                
-                const feature = e.features[0];
-                // Re-create an "event" object for showEventDetails from the feature
-                const event = {
-                    title: feature.properties.name,
-                    date: new Date(feature.properties.date),
-                    coordinates: feature.geometry.coordinates,
-                    description: feature.properties.description
-                };
-                showEventDetails(event);
             });
-
-            map.on('mouseenter', AppState.points.layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', AppState.points.layerId, () => { map.getCanvas().style.cursor = ''; });
-        }
-
-        // Toggle visibility for both layers
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'visible');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'visible');
-        }
-    } else {
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'none');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'none');
-        }
-    }
-
-    // --- Heatmap Layer ---
-    const heatmapLayer = map.getLayer(AppState.heat.layerId);
-    if (showHeatmap) {
-        initializeHeatMapLayer(map, { type: 'FeatureCollection', features: filteredFeatures });
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'visible');
-        }
-    } else {
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
-        }
-    }    // Update the latest events list from the master data source, sorted correctly.
-    updateLatestEventsList(window.geoJsonData?.features);    
-    // Update stats panel if it's open
-    if (document.getElementById('stats-panel').classList.contains('active')) {
-        updateStatsPanel();
-    }
-}
-
-// --- Filter-Event-Listener für alle relevanten Inputs ---
-function setupFilterListeners() {
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-
-    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
-    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
-    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
-}
-
-// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Apply saved UI theme
-    const savedUiTheme = localStorage.getItem('ui-theme');
-    if (savedUiTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        const toggleButton = document.querySelector('#light-dark-toggle h3');
-        if (toggleButton) {
-            toggleButton.textContent = 'Light Mode';
-        }
-    }
-
-    // Set default dates for filters (format: yyyy-mm-dd)
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const formatDate = (date) => {
-        const d = new Date(date);
-        let month = '' + (d.getMonth() + 1);
-        let day = '' + d.getDate();
-        const year = d.getFullYear();
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-        return [year, month, day].join('-');
-    };
-
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    if (startDateInput && endDateInput) {
-        startDateInput.value = formatDate(thirtyDaysAgo);
-        endDateInput.value = formatDate(today);
-    }
-
-    // Initial filter application on page load
-    if (window.geoJsonData) {
-        applyFilters();
-    }
-    setupFilterListeners();
-
-    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
-    function toggleLatestEventsSidebar() {
-        const sidebar = document.getElementById('latest-events-sidebar');
-        if (!sidebar) return;
-        sidebar.classList.toggle('active');
-    }
-
-    function toggleRectangleSelection() {
-        const button = document.getElementById('selection-toggle');
-        if (!button) return;
-        if (AppState.selection.isSelecting) {
-            // End selection mode
-            endRectangleSelection();
-            button.textContent = '📦 Auswahl';
-            button.classList.remove('active');
-        } else {
-            // Start selection mode
-            startRectangleSelection();
-            button.textContent = '❌ Beenden';
-            button.classList.add('active');
-        }
-    }
-
-    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
-    function ensureButtonListeners() {
-        const latestEventsBtn = document.getElementById('latest-events-toggle');
-        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
-        const selectionBtn = document.getElementById('selection-toggle');
-        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
-    }
-    ensureButtonListeners();
-
-    // --- NEU: MutationObserver statt DOMNodeInserted ---
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                ensureButtonListeners();
-            }
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-});
-
-// --- Fix filter logic to support both types and correct date parsing ---
-function applyFilters() {
-    const startDateString = document.getElementById('filter-start-date')?.value;
-    const endDateString = document.getElementById('filter-end-date')?.value;
-    const startDate = startDateString ? new Date(startDateString) : null;
-    let endDate = endDateString ? new Date(endDateString) : null;
-    if (endDate) endDate.setHours(23, 59, 59, 999);
-    if (startDate) startDate.setHours(0, 0, 0, 0);
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-    const checkedTypes = Array.from(typeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-
-    // --- Fix: Wenn keine Checkbox aktiv ist, keine Events anzeigen ---
-    let filteredFeatures = [];
-    if (checkedTypes.length === 0) {
-        filteredFeatures = [];
-    } else {
-        filteredFeatures = (window.geoJsonData?.features || []).filter(feature => {
-            const eventDate = new Date(feature.properties.date);
-            if (startDate && eventDate < startDate) return false;
-            if (endDate && eventDate > endDate) return false;
-            // Robust type filter: support both 'type' and 'name' property
-            const eventType = feature.properties.type || feature.properties.name;
-            if (!checkedTypes.includes(eventType)) return false;
-            return true;
-        });
-    }
-    // Sort features by date to identify the 3 newest events
-    const sortedByDate = [...filteredFeatures].sort((a, b) => 
-        new Date(b.properties.date) - new Date(a.properties.date)
-    );
-    const newestThreeIds = sortedByDate.slice(0, 3).map(f => f.properties.date + f.geometry.coordinates.join(','));
-
-    // Pre-calculate color and opacity for performance
-        filteredFeatures.forEach(feature => {
-        const eventDate = new Date(feature.properties.date);
-        const now = new Date();
-        const timeDiff = now - eventDate;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const daysDiff = timeDiff / oneDay;
-
-        const type = feature.properties.name;
-        // 7 event types and their base H (hue) values
-        const typeHues = {
-            'UNFALL':        0,    // Red
-            'STAU':          30,   // Orange
-            'BAUSTELLE':     50,   // Yellow
-            'WARTUNG':       120,  // Green
-            'SCHLECHTE_FAHRBEDINGUNG': 220, // Blue
-            'SPERRUNG':      275,  // Indigo
-            'VERANSTALTUNG': 290   // Violet
-        };
-        // Default to gray if unknown
-        const hue = typeHues[type] !== undefined ? typeHues[type] : 0;
-
-        // --- NEW COLOR RULES ---
-        // 0 days: s=75, v=100
-        // 0-10 days: s=75->100, v=100
-        // 10-30 days: s=100->0, v=100->50
-        let sat = 75, val = 100;
-        if (daysDiff <= 0) {
-            sat = 75;
-            val = 100;
-        } else if (daysDiff <= 10) {
-            // Linear interpolate s: 75->100, v: 100
-            sat = 75 + ((100 - 75) * (daysDiff / 10));
-            val = 100;
-        } else if (daysDiff <= 30) {
-            // Linear interpolate s: 100->0, v: 100->50
-            sat = 100 - (100 * ((daysDiff - 10) / 20));
-            val = 100 - (50 * ((daysDiff - 10) / 20));
-        } else {
-            sat = 0;
-            val = 50;
-        }
-
-        // Convert HSV to HSL for CSS (approximation)
-        // HSL lightness = V * (1 - S/2)
-        // HSL saturation = (V * S) / (1 - |2L - 1|)
-        // For simplicity, use HSL with L = (2 - S/100) * V/2
-        // But for vivid colors, just use H, S, and L = V/2 + 25
-        // We'll use HSL(h, s%, l%) with l = val/2 + 25 for a bright look
-        let l = val / 2 + 25;
-        if (l > 100) l = 100;
-        if (l < 0) l = 0;
-
-        const color = `hsl(${hue}, ${sat}%, ${l}%)`;
-        feature.properties.color = color;
-
-        // --- OPACITY RULES (unchanged) ---
-        let opacity = 0.5; // Default for > 30 and <= 90 days
-        if (daysDiff <= 1) opacity = 1;
-        else if (daysDiff <= 7) opacity = 0.9;
-        else if (daysDiff <= 14) opacity = 0.8;
-        else if (daysDiff <= 30) opacity = 0.65;
-        else if (daysDiff > 90) opacity = 0.15; // Older than 3 months
-        feature.properties.opacity = opacity;
-
-        // --- DYNAMIC MARKER SIZING (unchanged) ---
-        const maxRadius = 7;
-        const minRadius = 5.7;
-        const interpolationDays = 90;
-        let radius = minRadius; // Default for oldest
-
-        if (daysDiff <= 0) { // today or future (newest)
-            radius = maxRadius;
-        } else if (daysDiff < interpolationDays) { // linear interpolation
-            const slope = (minRadius - maxRadius) / interpolationDays;
-            radius = slope * daysDiff + maxRadius;
-        }
-        // For daysDiff >= interpolationDays, it will remain minRadius
-
-        feature.properties.radius = radius;
-
-        // --- BLUE BORDER FOR 3 NEWEST EVENTS (unchanged) ---
-        const eventId = feature.properties.date + feature.geometry.coordinates.join(',');
-        const isNewest = newestThreeIds.includes(eventId);
-        feature.properties.isNewest = isNewest;
-        feature.properties.strokeColor = isNewest ? '#0066ff' : 'transparent';
-        feature.properties.strokeWidth = isNewest ? 3 : 0;
-    });
-
-    const currentMode = AppState.modes[AppState.currentMode];
-    const showPoints = currentMode === 'Punkte' || currentMode === 'Beides';
-    const showHeatmap = currentMode === 'Heatmap' || currentMode === 'Beides';
-
-    // --- High-Performance Points Layer ---
-    const pointsSource = map.getSource(AppState.points.sourceId);
-    const pointsLayer = map.getLayer(AppState.points.layerId);
-    const shadowLayer = map.getLayer(AppState.points.layerId + '-shadow');
-    const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
-
-    if (showPoints) {
-        if (pointsSource) {
-            pointsSource.setData(pointsData);
-        } else {
-            map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
-        }
-
-        if (!pointsLayer) {            // Add a larger, blurred layer underneath for a glow/shadow effect.
-            // The radius and blur are interpolated based on zoom level to ensure visibility.
-            map.addLayer({
-                id: AppState.points.layerId + '-shadow',
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 20, // At zoom 10, radius is 10px
-                        22, 40  // At zoom 22, radius is 20px
-                    ],
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': [
-                        '*',
-                        ['get', 'opacity'],
-                        0.5 // Make shadow more subtle
-                    ],
-                    'circle-blur': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 2.5, // At zoom 10, blur is 2.5
-                        22, 8    // At zoom 22, blur is 8
-                    ],
-                    'circle-stroke-width': ['get', 'strokeWidth'],
-                    'circle-stroke-color': ['get', 'strokeColor'],
-                    'circle-stroke-opacity': 0.8
-                }
-            });// Add the main, crisp point layer on top
             map.addLayer({
                 id: AppState.points.layerId,
                 type: 'circle',
                 source: AppState.points.sourceId,
                 paint: {
-                    'circle-radius': ['get', 'radius'], // Use dynamic radius
+                    'circle-radius': ['get', 'radius'],
                     'circle-color': ['get', 'color'],
                     'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': ['get', 'strokeWidth'], // Blue border for newest events
+                    'circle-stroke-width': ['get', 'strokeWidth'],
                     'circle-stroke-color': ['get', 'strokeColor']
                 }
-            });map.on('click', AppState.points.layerId, (e) => {
-                // Check if we're in selection mode
-                if (AppState.selection.isSelecting) return;
-                
-                const feature = e.features[0];
-                // Re-create an "event" object for showEventDetails from the feature
-                const event = {
-                    title: feature.properties.name,
-                    date: new Date(feature.properties.date),
-                    coordinates: feature.geometry.coordinates,
-                    description: feature.properties.description
-                };
-                showEventDetails(event);
             });
-
-            map.on('mouseenter', AppState.points.layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', AppState.points.layerId, () => { map.getCanvas().style.cursor = ''; });
-        }
-
-        // Toggle visibility for both layers
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'visible');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'visible');
-        }
-    } else {
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'none');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'none');
-        }
-    }
-
-    // --- Heatmap Layer ---
-    const heatmapLayer = map.getLayer(AppState.heat.layerId);
-    if (showHeatmap) {
-        initializeHeatMapLayer(map, { type: 'FeatureCollection', features: filteredFeatures });
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'visible');
-        }
-    } else {
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
-        }
-    }    // Update the latest events list from the master data source, sorted correctly.
-    updateLatestEventsList(window.geoJsonData?.features);    
-    // Update stats panel if it's open
-    if (document.getElementById('stats-panel').classList.contains('active')) {
-        updateStatsPanel();
-    }
-}
-
-// --- Filter-Event-Listener für alle relevanten Inputs ---
-function setupFilterListeners() {
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-
-    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
-    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
-    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
-}
-
-// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Apply saved UI theme
-    const savedUiTheme = localStorage.getItem('ui-theme');
-    if (savedUiTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        const toggleButton = document.querySelector('#light-dark-toggle h3');
-        if (toggleButton) {
-            toggleButton.textContent = 'Light Mode';
-        }
-    }
-
-    // Set default dates for filters (format: yyyy-mm-dd)
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const formatDate = (date) => {
-        const d = new Date(date);
-        let month = '' + (d.getMonth() + 1);
-        let day = '' + d.getDate();
-        const year = d.getFullYear();
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-        return [year, month, day].join('-');
-    };
-
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    if (startDateInput && endDateInput) {
-        startDateInput.value = formatDate(thirtyDaysAgo);
-        endDateInput.value = formatDate(today);
-    }
-
-    // Initial filter application on page load
-    if (window.geoJsonData) {
-        applyFilters();
-    }
-    setupFilterListeners();
-
-    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
-    function toggleLatestEventsSidebar() {
-        const sidebar = document.getElementById('latest-events-sidebar');
-        if (!sidebar) return;
-        sidebar.classList.toggle('active');
-    }
-
-    function toggleRectangleSelection() {
-        const button = document.getElementById('selection-toggle');
-        if (!button) return;
-        if (AppState.selection.isSelecting) {
-            // End selection mode
-            endRectangleSelection();
-            button.textContent = '📦 Auswahl';
-            button.classList.remove('active');
-        } else {
-            // Start selection mode
-            startRectangleSelection();
-            button.textContent = '❌ Beenden';
-            button.classList.add('active');
-        }
-    }
-
-    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
-    function ensureButtonListeners() {
-        const latestEventsBtn = document.getElementById('latest-events-toggle');
-        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
-        const selectionBtn = document.getElementById('selection-toggle');
-        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
-    }
-    ensureButtonListeners();
-
-    // --- NEU: MutationObserver statt DOMNodeInserted ---
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                ensureButtonListeners();
-            }
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-});
-
-// --- Fix filter logic to support both types and correct date parsing ---
-function applyFilters() {
-    const startDateString = document.getElementById('filter-start-date')?.value;
-    const endDateString = document.getElementById('filter-end-date')?.value;
-    const startDate = startDateString ? new Date(startDateString) : null;
-    let endDate = endDateString ? new Date(endDateString) : null;
-    if (endDate) endDate.setHours(23, 59, 59, 999);
-    if (startDate) startDate.setHours(0, 0, 0, 0);
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-    const checkedTypes = Array.from(typeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-
-    // --- Fix: Wenn keine Checkbox aktiv ist, keine Events anzeigen ---
-    let filteredFeatures = [];
-    if (checkedTypes.length === 0) {
-        filteredFeatures = [];
-    } else {
-        filteredFeatures = (window.geoJsonData?.features || []).filter(feature => {
-            const eventDate = new Date(feature.properties.date);
-            if (startDate && eventDate < startDate) return false;
-            if (endDate && eventDate > endDate) return false;
-            // Robust type filter: support both 'type' and 'name' property
-            const eventType = feature.properties.type || feature.properties.name;
-            if (!checkedTypes.includes(eventType)) return false;
-            return true;
-        });
-    }
-    // Sort features by date to identify the 3 newest events
-    const sortedByDate = [...filteredFeatures].sort((a, b) => 
-        new Date(b.properties.date) - new Date(a.properties.date)
-    );
-    const newestThreeIds = sortedByDate.slice(0, 3).map(f => f.properties.date + f.geometry.coordinates.join(','));
-
-    // Pre-calculate color and opacity for performance
-        filteredFeatures.forEach(feature => {
-        const eventDate = new Date(feature.properties.date);
-        const now = new Date();
-        const timeDiff = now - eventDate;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const daysDiff = timeDiff / oneDay;
-
-        const type = feature.properties.name;
-        // 7 event types and their base H (hue) values
-        const typeHues = {
-            'UNFALL':        0,    // Red
-            'STAU':          30,   // Orange
-            'BAUSTELLE':     50,   // Yellow
-            'WARTUNG':       120,  // Green
-            'SCHLECHTE_FAHRBEDINGUNG': 220, // Blue
-            'SPERRUNG':      275,  // Indigo
-            'VERANSTALTUNG': 290   // Violet
-        };
-        // Default to gray if unknown
-        const hue = typeHues[type] !== undefined ? typeHues[type] : 0;
-
-        // --- NEW COLOR RULES ---
-        // 0 days: s=75, v=100
-        // 0-10 days: s=75->100, v=100
-        // 10-30 days: s=100->0, v=100->50
-        let sat = 75, val = 100;
-        if (daysDiff <= 0) {
-            sat = 75;
-            val = 100;
-        } else if (daysDiff <= 10) {
-            // Linear interpolate s: 75->100, v: 100
-            sat = 75 + ((100 - 75) * (daysDiff / 10));
-            val = 100;
-        } else if (daysDiff <= 30) {
-            // Linear interpolate s: 100->0, v: 100->50
-            sat = 100 - (100 * ((daysDiff - 10) / 20));
-            val = 100 - (50 * ((daysDiff - 10) / 20));
-        } else {
-            sat = 0;
-            val = 50;
-        }
-
-        // Convert HSV to HSL for CSS (approximation)
-        // HSL lightness = V * (1 - S/2)
-        // HSL saturation = (V * S) / (1 - |2L - 1|)
-        // For simplicity, use HSL with L = (2 - S/100) * V/2
-        // But for vivid colors, just use H, S, and L = V/2 + 25
-        // We'll use HSL(h, s%, l%) with l = val/2 + 25 for a bright look
-        let l = val / 2 + 25;
-        if (l > 100) l = 100;
-        if (l < 0) l = 0;
-
-        const color = `hsl(${hue}, ${sat}%, ${l}%)`;
-        feature.properties.color = color;
-
-        // --- OPACITY RULES (unchanged) ---
-        let opacity = 0.5; // Default for > 30 and <= 90 days
-        if (daysDiff <= 1) opacity = 1;
-        else if (daysDiff <= 7) opacity = 0.9;
-        else if (daysDiff <= 14) opacity = 0.8;
-        else if (daysDiff <= 30) opacity = 0.65;
-        else if (daysDiff > 90) opacity = 0.15; // Older than 3 months
-        feature.properties.opacity = opacity;
-
-        // --- DYNAMIC MARKER SIZING (unchanged) ---
-        const maxRadius = 7;
-        const minRadius = 5.7;
-        const interpolationDays = 90;
-        let radius = minRadius; // Default for oldest
-
-        if (daysDiff <= 0) { // today or future (newest)
-            radius = maxRadius;
-        } else if (daysDiff < interpolationDays) { // linear interpolation
-            const slope = (minRadius - maxRadius) / interpolationDays;
-            radius = slope * daysDiff + maxRadius;
-        }
-        // For daysDiff >= interpolationDays, it will remain minRadius
-
-        feature.properties.radius = radius;
-
-        // --- BLUE BORDER FOR 3 NEWEST EVENTS (unchanged) ---
-        const eventId = feature.properties.date + feature.geometry.coordinates.join(',');
-        const isNewest = newestThreeIds.includes(eventId);
-        feature.properties.isNewest = isNewest;
-        feature.properties.strokeColor = isNewest ? '#0066ff' : 'transparent';
-        feature.properties.strokeWidth = isNewest ? 3 : 0;
-    });
-
-    const currentMode = AppState.modes[AppState.currentMode];
-    const showPoints = currentMode === 'Punkte' || currentMode === 'Beides';
-    const showHeatmap = currentMode === 'Heatmap' || currentMode === 'Beides';
-
-    // --- High-Performance Points Layer ---
-    const pointsSource = map.getSource(AppState.points.sourceId);
-    const pointsLayer = map.getLayer(AppState.points.layerId);
-    const shadowLayer = map.getLayer(AppState.points.layerId + '-shadow');
-    const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
-
-    if (showPoints) {
-        if (pointsSource) {
-            pointsSource.setData(pointsData);
-        } else {
-            map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
-        }
-
-        if (!pointsLayer) {            // Add a larger, blurred layer underneath for a glow/shadow effect.
-            // The radius and blur are interpolated based on zoom level to ensure visibility.
-            map.addLayer({
-                id: AppState.points.layerId + '-shadow',
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 20, // At zoom 10, radius is 10px
-                        22, 40  // At zoom 22, radius is 20px
-                    ],
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': [
-                        '*',
-                        ['get', 'opacity'],
-                        0.5 // Make shadow more subtle
-                    ],
-                    'circle-blur': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 2.5, // At zoom 10, blur is 2.5
-                        22, 8    // At zoom 22, blur is 8
-                    ],
-                    'circle-stroke-width': ['get', 'strokeWidth'],
-                    'circle-stroke-color': ['get', 'strokeColor'],
-                    'circle-stroke-opacity': 0.8
-                }
-            });// Add the main, crisp point layer on top
-            map.addLayer({
-                id: AppState.points.layerId,
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': ['get', 'radius'], // Use dynamic radius
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': ['get', 'strokeWidth'], // Blue border for newest events
-                    'circle-stroke-color': ['get', 'strokeColor']
-                }
-            });map.on('click', AppState.points.layerId, (e) => {
-                // Check if we're in selection mode
+            map.on('click', AppState.points.layerId, (e) => {
                 if (AppState.selection.isSelecting) return;
-                
                 const feature = e.features[0];
-                // Re-create an "event" object for showEventDetails from the feature
-                const event = {
-                    title: feature.properties.name,
-                    date: new Date(feature.properties.date),
-                    coordinates: feature.geometry.coordinates,
-                    description: feature.properties.description
-                };
-                showEventDetails(event);
-            });
-
-            map.on('mouseenter', AppState.points.layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', AppState.points.layerId, () => { map.getCanvas().style.cursor = ''; });
-        }
-
-        // Toggle visibility for both layers
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'visible');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'visible');
-        }
-    } else {
-        if (pointsLayer) {
-            map.setLayoutProperty(AppState.points.layerId, 'visibility', 'none');
-        }
-        if (shadowLayer) {
-            map.setLayoutProperty(AppState.points.layerId + '-shadow', 'visibility', 'none');
-        }
-    }
-
-    // --- Heatmap Layer ---
-    const heatmapLayer = map.getLayer(AppState.heat.layerId);
-    if (showHeatmap) {
-        initializeHeatMapLayer(map, { type: 'FeatureCollection', features: filteredFeatures });
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'visible');
-        }
-    } else {
-        if (heatmapLayer) {
-            map.setLayoutProperty(AppState.heat.layerId, 'visibility', 'none');
-        }
-    }    // Update the latest events list from the master data source, sorted correctly.
-    updateLatestEventsList(window.geoJsonData?.features);    
-    // Update stats panel if it's open
-    if (document.getElementById('stats-panel').classList.contains('active')) {
-        updateStatsPanel();
-    }
-}
-
-// --- Filter-Event-Listener für alle relevanten Inputs ---
-function setupFilterListeners() {
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-
-    if (startDateInput) startDateInput.addEventListener('change', applyFilters);
-    if (endDateInput) endDateInput.addEventListener('change', applyFilters);
-    typeCheckboxes.forEach(cb => cb.addEventListener('change', applyFilters));
-}
-
-// --- Filter-Logik: Set default filter dates to today and 30 days ago, and fix filter logic ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Apply saved UI theme
-    const savedUiTheme = localStorage.getItem('ui-theme');
-    if (savedUiTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        const toggleButton = document.querySelector('#light-dark-toggle h3');
-        if (toggleButton) {
-            toggleButton.textContent = 'Light Mode';
-        }
-    }
-
-    // Set default dates for filters (format: yyyy-mm-dd)
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const formatDate = (date) => {
-        const d = new Date(date);
-        let month = '' + (d.getMonth() + 1);
-        let day = '' + d.getDate();
-        const year = d.getFullYear();
-        if (month.length < 2) month = '0' + month;
-        if (day.length < 2) day = '0' + day;
-        return [year, month, day].join('-');
-    };
-
-    const startDateInput = document.getElementById('filter-start-date');
-    const endDateInput = document.getElementById('filter-end-date');
-    if (startDateInput && endDateInput) {
-        startDateInput.value = formatDate(thirtyDaysAgo);
-        endDateInput.value = formatDate(today);
-    }
-
-    // Initial filter application on page load
-    if (window.geoJsonData) {
-        applyFilters();
-    }
-    setupFilterListeners();
-
-    // --- Fix: Ensure toggleLatestEventsSidebar and toggleRectangleSelection are defined and hooked up ---
-    function toggleLatestEventsSidebar() {
-        const sidebar = document.getElementById('latest-events-sidebar');
-        if (!sidebar) return;
-        sidebar.classList.toggle('active');
-    }
-
-    function toggleRectangleSelection() {
-        const button = document.getElementById('selection-toggle');
-        if (!button) return;
-        if (AppState.selection.isSelecting) {
-            // End selection mode
-            endRectangleSelection();
-            button.textContent = '📦 Auswahl';
-            button.classList.remove('active');
-        } else {
-            // Start selection mode
-            startRectangleSelection();
-            button.textContent = '❌ Beenden';
-            button.classList.add('active');
-        }
-    }
-
-    // Ensure event listeners for the buttons are set up (in case inline handlers are missing)
-    function ensureButtonListeners() {
-        const latestEventsBtn = document.getElementById('latest-events-toggle');
-        if (latestEventsBtn) latestEventsBtn.onclick = toggleLatestEventsSidebar;
-        const selectionBtn = document.getElementById('selection-toggle');
-        if (selectionBtn) selectionBtn.onclick = toggleRectangleSelection;
-    }
-    ensureButtonListeners();
-
-    // --- NEU: MutationObserver statt DOMNodeInserted ---
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                ensureButtonListeners();
-            }
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-});
-
-// --- Fix filter logic to support both types and correct date parsing ---
-function applyFilters() {
-    const startDateString = document.getElementById('filter-start-date')?.value;
-    const endDateString = document.getElementById('filter-end-date')?.value;
-    const startDate = startDateString ? new Date(startDateString) : null;
-    let endDate = endDateString ? new Date(endDateString) : null;
-    if (endDate) endDate.setHours(23, 59, 59, 999);
-    if (startDate) startDate.setHours(0, 0, 0, 0);
-    const typeCheckboxes = document.querySelectorAll('#filter-form input[name="type"]');
-    const checkedTypes = Array.from(typeCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
-
-    // --- Fix: Wenn keine Checkbox aktiv ist, keine Events anzeigen ---
-    let filteredFeatures = [];
-    if (checkedTypes.length === 0) {
-        filteredFeatures = [];
-    } else {
-        filteredFeatures = (window.geoJsonData?.features || []).filter(feature => {
-            const eventDate = new Date(feature.properties.date);
-            if (startDate && eventDate < startDate) return false;
-            if (endDate && eventDate > endDate) return false;
-            // Robust type filter: support both 'type' and 'name' property
-            const eventType = feature.properties.type || feature.properties.name;
-            if (!checkedTypes.includes(eventType)) return false;
-            return true;
-        });
-    }
-    // Sort features by date to identify the 3 newest events
-    const sortedByDate = [...filteredFeatures].sort((a, b) => 
-        new Date(b.properties.date) - new Date(a.properties.date)
-    );
-    const newestThreeIds = sortedByDate.slice(0, 3).map(f => f.properties.date + f.geometry.coordinates.join(','));
-
-    // Pre-calculate color and opacity for performance
-        filteredFeatures.forEach(feature => {
-        const eventDate = new Date(feature.properties.date);
-        const now = new Date();
-        const timeDiff = now - eventDate;
-        const oneDay = 1000 * 60 * 60 * 24;
-        const daysDiff = timeDiff / oneDay;
-
-        const type = feature.properties.name;
-        // 7 event types and their base H (hue) values
-        const typeHues = {
-            'UNFALL':        0,    // Red
-            'STAU':          30,   // Orange
-            'BAUSTELLE':     50,   // Yellow
-            'WARTUNG':       120,  // Green
-            'SCHLECHTE_FAHRBEDINGUNG': 220, // Blue
-            'SPERRUNG':      275,  // Indigo
-            'VERANSTALTUNG': 290   // Violet
-        };
-        // Default to gray if unknown
-        const hue = typeHues[type] !== undefined ? typeHues[type] : 0;
-
-        // --- NEW COLOR RULES ---
-        // 0 days: s=75, v=100
-        // 0-10 days: s=75->100, v=100
-        // 10-30 days: s=100->0, v=100->50
-        let sat = 75, val = 100;
-        if (daysDiff <= 0) {
-            sat = 75;
-            val = 100;
-        } else if (daysDiff <= 10) {
-            // Linear interpolate s: 75->100, v: 100
-            sat = 75 + ((100 - 75) * (daysDiff / 10));
-            val = 100;
-        } else if (daysDiff <= 30) {
-            // Linear interpolate s: 100->0, v: 100->50
-            sat = 100 - (100 * ((daysDiff - 10) / 20));
-            val = 100 - (50 * ((daysDiff - 10) / 20));
-        } else {
-            sat = 0;
-            val = 50;
-        }
-
-        // Convert HSV to HSL for CSS (approximation)
-        // HSL lightness = V * (1 - S/2)
-        // HSL saturation = (V * S) / (1 - |2L - 1|)
-        // For simplicity, use HSL with L = (2 - S/100) * V/2
-        // But for vivid colors, just use H, S, and L = V/2 + 25
-        // We'll use HSL(h, s%, l%) with l = val/2 + 25 for a bright look
-        let l = val / 2 + 25;
-        if (l > 100) l = 100;
-        if (l < 0) l = 0;
-
-        const color = `hsl(${hue}, ${sat}%, ${l}%)`;
-        feature.properties.color = color;
-
-        // --- OPACITY RULES (unchanged) ---
-        let opacity = 0.5; // Default for > 30 and <= 90 days
-        if (daysDiff <= 1) opacity = 1;
-        else if (daysDiff <= 7) opacity = 0.9;
-        else if (daysDiff <= 14) opacity = 0.8;
-        else if (daysDiff <= 30) opacity = 0.65;
-        else if (daysDiff > 90) opacity = 0.15; // Older than 3 months
-        feature.properties.opacity = opacity;
-
-        // --- DYNAMIC MARKER SIZING (unchanged) ---
-        const maxRadius = 7;
-        const minRadius = 5.7;
-        const interpolationDays = 90;
-        let radius = minRadius; // Default for oldest
-
-        if (daysDiff <= 0) { // today or future (newest)
-            radius = maxRadius;
-        } else if (daysDiff < interpolationDays) { // linear interpolation
-            const slope = (minRadius - maxRadius) / interpolationDays;
-            radius = slope * daysDiff + maxRadius;
-        }
-        // For daysDiff >= interpolationDays, it will remain minRadius
-
-        feature.properties.radius = radius;
-
-        // --- BLUE BORDER FOR 3 NEWEST EVENTS (unchanged) ---
-        const eventId = feature.properties.date + feature.geometry.coordinates.join(',');
-        const isNewest = newestThreeIds.includes(eventId);
-        feature.properties.isNewest = isNewest;
-        feature.properties.strokeColor = isNewest ? '#0066ff' : 'transparent';
-        feature.properties.strokeWidth = isNewest ? 3 : 0;
-    });
-
-    const currentMode = AppState.modes[AppState.currentMode];
-    const showPoints = currentMode === 'Punkte' || currentMode === 'Beides';
-    const showHeatmap = currentMode === 'Heatmap' || currentMode === 'Beides';
-
-    // --- High-Performance Points Layer ---
-    const pointsSource = map.getSource(AppState.points.sourceId);
-    const pointsLayer = map.getLayer(AppState.points.layerId);
-    const shadowLayer = map.getLayer(AppState.points.layerId + '-shadow');
-    const pointsData = { type: 'FeatureCollection', features: filteredFeatures };
-
-    if (showPoints) {
-        if (pointsSource) {
-            pointsSource.setData(pointsData);
-        } else {
-            map.addSource(AppState.points.sourceId, { type: 'geojson', data: pointsData });
-        }
-
-        if (!pointsLayer) {            // Add a larger, blurred layer underneath for a glow/shadow effect.
-            // The radius and blur are interpolated based on zoom level to ensure visibility.
-            map.addLayer({
-                id: AppState.points.layerId + '-shadow',
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 20, // At zoom 10, radius is 10px
-                        22, 40  // At zoom 22, radius is 20px
-                    ],
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': [
-                        '*',
-                        ['get', 'opacity'],
-                        0.5 // Make shadow more subtle
-                    ],
-                    'circle-blur': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 2.5, // At zoom 10, blur is 2.5
-                        22, 8    // At zoom 22, blur is 8
-                    ],
-                    'circle-stroke-width': ['get', 'strokeWidth'],
-                    'circle-stroke-color': ['get', 'strokeColor'],
-                    'circle-stroke-opacity': 0.8
-                }
-            });// Add the main, crisp point layer on top
-            map.addLayer({
-                id: AppState.points.layerId,
-                type: 'circle',
-                source: AppState.points.sourceId,
-                paint: {
-                    'circle-radius': ['get', 'radius'], // Use dynamic radius
-                    'circle-color': ['get', 'color'],
-                    'circle-opacity': ['get', 'opacity'],
-                    'circle-stroke-width': ['get', 'strokeWidth'], // Blue border for newest events
-                    'circle-stroke-color': ['get', 'strokeColor']
-                }
-            });map.on('click', AppState.points.layerId, (e) => {
-                // Check if we're in selection mode
-                if (AppState.selection.isSelecting) return;
-                
-                const feature = e.features[0];
-                // Re-create an "event" object for showEventDetails from the feature
                 const event = {
                     title: feature.properties.name,
                     date: new Date(feature.properties.date),
