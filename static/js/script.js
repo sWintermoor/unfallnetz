@@ -2109,23 +2109,54 @@ function updateTimebasedStats(features) {
     document.getElementById('month-trend').textContent = monthEvents > 50 ? '↗' : '→';
 }
 
+// ...existing code...
+
 function updateEventTypeStats(features) {
-    const accidents = features.filter(f => f.properties.name === 'UNFALL').length;
-    const authority = features.filter(f => f.properties.name === 'AuthorityOperation').length;
-    const total = features.length;
-    
-    document.getElementById('accident-count').textContent = accidents;
-    document.getElementById('authority-count').textContent = authority;
-    
-    // Update bar chart
-    if (total > 0) {
-        const accidentPercent = (accidents / total) * 100;
-        const authorityPercent = (authority / total) * 100;
-        
-        document.querySelector('[data-type="UNFALL"] .bar-fill').style.width = accidentPercent + '%';
-        document.querySelector('[data-type="AuthorityOperation"] .bar-fill').style.width = authorityPercent + '%';
+    // Zähle alle Typen dynamisch
+    const typeLabels = {
+        'UNFALL': 'Unfälle',
+        'STAU': 'Staus',
+        'BAUSTELLE': 'Baustellen',
+        'WARTUNG': 'Wartungen',
+        'SCHLECHTE_FAHRBEDINGUNG': 'Schlechte Fahrbed.',
+        'SPERRUNG': 'Sperrungen',
+        'VERANSTALTUNG': 'Veranstaltungen'
+    };
+
+    // Zähle alle Typen
+    const typeCounts = {};
+    features.forEach(f => {
+        const t = f.properties.name;
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+    });
+
+    // Füge alle Typen in die Statistik ein (auch wenn 0)
+    const statsContainer = document.getElementById('event-type-stats');
+    if (statsContainer) {
+        statsContainer.innerHTML = '';
+        Object.keys(typeLabels).forEach(type => {
+            const count = typeCounts[type] || 0;
+            const label = typeLabels[type];
+            // Balkenbreite berechnen
+            const percent = features.length > 0 ? (count / features.length) * 100 : 0;
+            statsContainer.innerHTML += `
+                <div class="event-type-row" style="display:flex;align-items:center;margin-bottom:6px;">
+                    <span style="width:140px;display:inline-block;">${label}</span>
+                    <span style="font-weight:bold;width:32px;display:inline-block;">${count}</span>
+                    <div class="bar-bg" style="flex:1;height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin-left:8px;">
+                        <div class="bar-fill" style="height:100%;background:#3182ce;width:${percent}%;transition:width 0.3s;"></div>
+                    </div>
+                </div>
+            `;
+        });
     }
+
+    // Für Kompatibilität: Setze weiterhin die alten IDs, falls sie im UI gebraucht werden
+    document.getElementById('accident-count') && (document.getElementById('accident-count').textContent = typeCounts['UNFALL'] || 0);
+    document.getElementById('authority-count') && (document.getElementById('authority-count').textContent = typeCounts['AuthorityOperation'] || 0);
 }
+
+// ...existing code...
 
 function updateAdvancedStats(features) {
     const now = new Date();
