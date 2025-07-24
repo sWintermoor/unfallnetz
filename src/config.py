@@ -1,6 +1,9 @@
-# Definiere eine Route (eine URL, die eine Funktion aufruft)
-# Verbindung zu deiner MongoDB
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class Config:
-    MONGO_URI = "mongodb://localhost:27017/unfallnetz"
-    MONGODB_URI = "mongodb+srv://arseniibelousovoffice:a@cluster0.wnykhh4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    SOURCE_URL = "https://api.hamburg.de/datasets/v1/verkehrsinformation/collections/hauptmeldungen/items?limit=3000&f=json"
+    MONGO_URI = os.getenv("MONGO_URI_ENV")
+    MONGODB_URI = os.getenv("MONGODB_URI_ENV")
+    SOURCE_URL = os.getenv("SOURCE_URL_ENV")
