@@ -8,7 +8,6 @@ import requests
 from datetime import datetime
 from .utils import utils_sort_by_event_date
 
-
 def initialize_db(collection_handler, input_url, input_uri):
     """
     Verbindet zu MongoDB, lädt externes GeoJSON von SOURCE_URL,
@@ -52,7 +51,6 @@ def add_timestamp(documents):
         if "timestamp" not in doc:
             doc["timestamp"] = datetime.now()
     return documents
-
 
 """
 def get_unfaelle(collection_handler):
