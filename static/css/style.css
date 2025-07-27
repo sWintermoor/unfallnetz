@@ -997,3 +997,21 @@ body:has(.stats-panel.active) .hotspot-info {
     display: block;
     animation: slideInFromRight 0.3s ease;
 }
+
+#chatbot-container {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  height: 400px;
+  background: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  flex-direction: column;
+  z-index: 1000;
+}
+
+#chatbot-container.active {
+  display: flex;
+}
