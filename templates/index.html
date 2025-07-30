@@ -276,8 +276,18 @@
     </div>
 
     <!-- ChatBot Container-->
-    <div id="chatbot-container">
-        <p>Hier entsteht die Chatbot-UI...</p>
+    <div id="chatbot-container" class="chatbot-container">
+    <div class="chatbot-header" onmousedown="moveChatbot(event.clientX, event.clientY)">
+        <h3>Chatbot</h3>
+        <button class="chatbot-close" onclick=toggleChatbot()>×</button>
+    </div>
+    <div id="chatbot-content" class="chatbot-content">
+        <!-- Hier erscheinen später die Nachrichten -->
+    </div>
+    <div class="chatbot-input-area">
+        <input type="text" id="chatbot-input" placeholder="Gib deine Frage ein…" />
+        <button class="chatbot-send">Senden</button>
+    </div>
     </div>
 
     <!-- Eigenes JavaScript -->

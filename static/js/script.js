@@ -1236,9 +1236,22 @@ function toggleStatsPanel() {
 }
 
 function toggleChatbot() {
-    console.log("Hello")
     const container = document.getElementById('chatbot-container');
     container.classList.toggle('active');
+}
+
+function moveChatbot(mouseX, mouseY){
+    console.log("its working!");
+    const container = document.getElementById('chatbot-container')  ;
+    const rect = container.getBoundingClientRect();
+
+    deltaX = mouseX - rect.left;
+    deltaY = mouseY - rect.top;
+
+    container.style.bottom = 'auto';
+    container.style.right = 'auto';
+    container.style.left = mouseX + deltaX;
+    container.style.top = mouseY + deltaY;
 }
 
 // Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
