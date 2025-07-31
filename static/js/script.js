@@ -1240,19 +1240,29 @@ function toggleChatbot() {
     container.classList.toggle('active');
 }
 
-function moveChatbot(mouseX, mouseY){
-    console.log("its working!");
-    const container = document.getElementById('chatbot-container')  ;
-    const rect = container.getBoundingClientRect();
+document.addEventListener('DOMContentLoaded', () => {
+  const header    = document.getElementById('chatbot-header');
+  const container = document.getElementById('chatbot-container');
+  let isDragging = false, offsetX = 0, offsetY = 0;
 
-    deltaX = mouseX - rect.left;
-    deltaY = mouseY - rect.top;
+  header.addEventListener('mousedown', e => {
+    isDragging = true;
+    offsetX = e.clientX - container.getBoundingClientRect().left;
+    offsetY = e.clientY - container.getBoundingClientRect().top;
+    document.body.style.userSelect = 'none';
+  });
 
-    container.style.bottom = 'auto';
-    container.style.right = 'auto';
-    container.style.left = mouseX + deltaX;
-    container.style.top = mouseY + deltaY;
-}
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    container.style.left = `${e.clientX - offsetX}px`;
+    container.style.top  = `${e.clientY - offsetY}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+    document.body.style.userSelect = 'auto';
+  });
+});
 
 // Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
 function updateLatestEventsList(features) {
