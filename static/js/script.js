@@ -1235,6 +1235,8 @@ function toggleStatsPanel() {
   }
 }
 
+// Chatbot functionality
+
 function toggleChatbot() {
     const container = document.getElementById('chatbot-container');
     container.classList.toggle('active');
@@ -1263,6 +1265,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.style.userSelect = 'auto';
   });
 });
+
+function sendMessageChatbot(){
+    let input = document.getElementById('chatbot-input').value;
+    printChatbotContent(input);
+    input = '';
+
+    // sending to server functionality missing
+}
+
+function printChatbotContent(input){
+    const contentContainer = document.getElementById('chatbot-content');
+    const userMsg = document.createElement('div');
+    userMsg.className = 'chatbot-user-message';
+    userMsg.textContent = input;
+    contentContainer.appendChild(userMsg);
+}
 
 // Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
 function updateLatestEventsList(features) {
