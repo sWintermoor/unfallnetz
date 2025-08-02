@@ -1269,10 +1269,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function sendMessageChatbot(){
     let input = document.getElementById('chatbot-input').value;
     printChatbotContent(input);
+    socket.emit('ChatbotMessage', input); // Sending Input to Server
     input = '';
-
-    // sending to server functionality missing
 }
+
+socket.on('ChatbotResponse', response => {
+    printChatbotContent(response);
+});
 
 function printChatbotContent(input){
     const contentContainer = document.getElementById('chatbot-content');

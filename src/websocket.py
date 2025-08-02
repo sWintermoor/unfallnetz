@@ -1,8 +1,16 @@
+from .langchain_bot import run_prompt_chatbot
+
 def register_websocket(socketio, collection):
     @socketio.on('connect')
     def handle_connect():
         send_data(socketio, collection.find())
 
+    @socketio.on('ChatbotMessage')
+    def handle_chatbotMessage(message):
+        response = run_prompt_chatbot(message)
+        socketio.emit('ChatbotResonse', response)
+
+# Helping functions
 def send_data(socketio, data):
     print("sending data to Frontend")
 

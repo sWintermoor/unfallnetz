@@ -1,4 +1,5 @@
 import os
+import getpass
 from dotenv import load_dotenv
 
 from pymongo import MongoClient
@@ -12,6 +13,9 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 
 load_dotenv()
+
+if not os.getenv("OPENAI_API_KEY"):
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
 client = MongoClient(os.getenv("MONGO_URI"), server_api=ServerApi('1'))
 db = client["Unfall"]
@@ -28,8 +32,16 @@ def load_docs():
 
     return docs
 
+def test_docs():
+    docs = []
+    content = "Just testing"
+    metadata = {"type": "test"}
+
+    docs.append(Document(page_content=content, metadata=metadata))
+    return docs
+
 def build_vectorstore():
-    docs = load_docs()
+    docs = test_docs()
     embeddings = OpenAIEmbeddings()
     return FAISS.from_documents(docs, embeddings)
 
@@ -54,7 +66,7 @@ def get_qa_chain():
     chain = create_retrieval_chain(vs, question_answer_chain)
     return chain
 
-def run_prompt(input_text):
+def run_prompt_chatbot(input_text):
     chain = get_qa_chain()
     result = chain.invoke({"input": input_text})
 
