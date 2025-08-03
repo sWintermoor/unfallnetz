@@ -47,7 +47,7 @@ def build_vectorstore():
 
 def get_qa_chain():
     vs = build_vectorstore()
-    llm = ChatOpenAI(model="gpt-3.5.turbo")
+    llm = ChatOpenAI(model="gpt-4.1")
 
     system_prompt = (
         "Use the given context to answer the question. "
@@ -62,8 +62,9 @@ def get_qa_chain():
         ("human", "{input}")
     ])
 
+    retriever = vs.as_retriever()
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    chain = create_retrieval_chain(vs, question_answer_chain)
+    chain = create_retrieval_chain(retriever, question_answer_chain)
     return chain
 
 def run_prompt_chatbot(input_text):
