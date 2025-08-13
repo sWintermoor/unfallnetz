@@ -7,9 +7,12 @@ def register_websocket(socketio, collection):
 
     @socketio.on('ChatbotMessage')
     def handle_chatbotMessage(message):
-        response = run_prompt_chatbot(message)
+        response, commands = run_prompt_chatbot(message)
         chatbotAnswer = response['answer']
-        socketio.emit('ChatbotResponse', chatbotAnswer)
+        socketio.emit('ChatbotResponse', {
+            'answer': chatbotAnswer,
+            'commands': commands
+        })
 
 # Helping functions
 def send_data(socketio, data):

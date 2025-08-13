@@ -1093,3 +1093,27 @@ body:has(.stats-panel.active) .hotspot-info {
 .chatbot-input-area .chatbot-send:hover {
   background: #2b6cb0;
 }
+
+.chatbot-user-message {
+  align-self: flex-end;
+  background: #3182ce;
+  color: #fff;
+  padding: 8px 12px;
+  margin: 6px 4px;
+  border-radius: 16px 16px 0 16px;
+  max-width: 80%;
+  word-wrap: break-word;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chatbot-response-message {
+  align-self: flex-start;
+  background: #f1f1f1;
+  color: #333;
+  padding: 8px 12px;
+  margin: 6px 4px;
+  border-radius: 16px 16px 16px 0;
+  max-width: 80%;
+  word-wrap: break-word;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}

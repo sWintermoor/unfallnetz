@@ -1,4 +1,5 @@
 import os
+import re
 import getpass
 from dotenv import load_dotenv
 
@@ -25,21 +26,23 @@ def load_docs():
     docs = []
 
     for entry in data:
+        if not entry['properties'].get('end'):
+            entry['properties']['end'] = 'Unknown'
+
+        if not entry['geometry'].get('coordinates'):
+            entry['geometry']['coordinates'] = 'Unknown'
+
         content = entry['properties']['description']
-        metadata = {"type": entry['properties']['art']}
+        metadata = {"type": entry['properties']['art'],
+                    "status": entry['properties']['status'],
+                    "location": entry['geometry']['coordinates'],
+                    "beginn": entry['properties']['start'],
+                    "end": entry['properties']['end']}
 
         docs.append(Document(page_content=content, metadata=metadata))
 
     print(f"Länge des Dokuments: {len(docs)}")
 
-    return docs
-
-def test_docs():
-    docs = []
-    content = "Just testing"
-    metadata = {"type": "test"}
-
-    docs.append(Document(page_content=content, metadata=metadata))
     return docs
 
 def build_vectorstore():
@@ -54,8 +57,10 @@ def get_qa_chain():
     system_prompt = (
         "Use the given context to answer the question. "
         "If you don't know the answer, say you don't know. "
-        "Use three sentence maximum and keep the answer concise. "
-        "Use German language."
+        "Give coordinates if you think they are usefull for localisation. Write them at end as COORDINATES: coordinate1, coordinate2 with four decimal places"
+        # "Use three sentence maximum and keep the answer concise. "
+        "Keep the answer concise. "
+        "Use German language. "
         "Context: {context}"
     )
 
@@ -69,11 +74,25 @@ def get_qa_chain():
     chain = create_retrieval_chain(retriever, question_answer_chain)
     return chain
 
+def parse_response(input):
+    answer = input['answer']
+    pattern = r'COORDINATES:\s*([+-]?\d+\.\d{4})\s*,?\s*([+-]?\d+\.\d{4})'
+    match = re.search(pattern, answer)
+    if match:
+        coordinate1, coordinate2 = match.groups()
+        print(f"coord1: {coordinate1}, coord2: {coordinate2}")
+        return{
+            "coordinate1": coordinate1,
+            "coordinate2": coordinate2
+        }
+    return None
+
 def run_prompt_chatbot(input_text):
     chain = get_qa_chain()
     result = chain.invoke({"input": input_text})
+    commands = parse_response(result)
 
-    return result
+    return result, commands
 
 
 

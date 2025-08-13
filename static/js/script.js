@@ -1268,21 +1268,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function sendMessageChatbot(){
     let input = document.getElementById('chatbot-input').value;
-    printChatbotContent(input);
+    printUserContent(input);
     socket.emit('ChatbotMessage', input); // Sending Input to Server
     input = '';
 }
 
 socket.on('ChatbotResponse', response => {
-    printChatbotContent(response);
+    console.log("response: ", response)
+    printChatbotContent(response['answer']);
+    handleChatbotCommands(response['commands']);
 });
 
-function printChatbotContent(input){
+function handleChatbotCommands(commands){
+    const coordinates = [
+        parseFloat(commands["coordinate2"]),
+        parseFloat(commands["coordinate1"])
+    ];
+    map.flyTo({ center: coordinates, zoom: 14, speed: 0.8 })
+}
+
+function printUserContent(input){
     const contentContainer = document.getElementById('chatbot-content');
     const userMsg = document.createElement('div');
     userMsg.className = 'chatbot-user-message';
     userMsg.textContent = input;
     contentContainer.appendChild(userMsg);
+}
+
+function printChatbotContent(input){
+    const contentContainer = document.getElementById('chatbot-content');
+    const chatbotMsg = document.createElement('div');
+    chatbotMsg.className = 'chatbot-response-message';
+    chatbotMsg.textContent = input;
+    contentContainer.appendChild(chatbotMsg);
 }
 
 // Rebuilds the entire "Latest Events" list from the source data, ensuring correct sort order.
