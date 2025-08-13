@@ -81,16 +81,18 @@ def parse_response(input):
     if match:
         coordinate1, coordinate2 = match.groups()
         print(f"coord1: {coordinate1}, coord2: {coordinate2}")
-        return{
+        commands = {
             "coordinate1": coordinate1,
             "coordinate2": coordinate2
         }
-    return None
+        result = re.sub(pattern, '', answer).strip()
+        return result, commands
+    return input, None
 
 def run_prompt_chatbot(input_text):
     chain = get_qa_chain()
     result = chain.invoke({"input": input_text})
-    commands = parse_response(result)
+    result, commands = parse_response(result)
 
     return result, commands
 
