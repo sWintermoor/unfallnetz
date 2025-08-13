@@ -17,18 +17,20 @@ load_dotenv()
 if not os.getenv("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-client = MongoClient(os.getenv("MONGO_URI"), server_api=ServerApi('1'))
+client = MongoClient(os.getenv("MONGODB_URI_ENV"), server_api=ServerApi('1'))
 db = client["Unfall"]
 
 def load_docs():
-    data = db["verkehrsmeldungen"]
+    data = db["verkehrsmeldungen"].find({})
     docs = []
 
     for entry in data:
-        content = entry
-        metadata = {"type": "Verkehrsmeldung"}
+        content = entry['properties']['description']
+        metadata = {"type": entry['properties']['art']}
 
         docs.append(Document(page_content=content, metadata=metadata))
+
+    print(f"Länge des Dokuments: {len(docs)}")
 
     return docs
 
@@ -41,7 +43,7 @@ def test_docs():
     return docs
 
 def build_vectorstore():
-    docs = test_docs()
+    docs = load_docs()
     embeddings = OpenAIEmbeddings()
     return FAISS.from_documents(docs, embeddings)
 
