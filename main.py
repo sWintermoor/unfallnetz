@@ -10,6 +10,7 @@ from src.routes import register_routes
 from src.websocket import register_websocket
 from src.database import initialize_db
 from src.updater import update_system
+from src.langchain_bot import prepare_chatbot
 
 # App- und SocketIO-Initialisierung
 app = Flask(__name__)
@@ -22,6 +23,9 @@ app.collection_handler = collection_handler
 # Standard- und Websocket-Routen registrieren
 register_routes(app)
 register_websocket(socketio, collection_handler)
+
+# Dokumente für Chatbot laden - Muss bearbeitet werden, momentan nur 1 Nutzer möglich + greift auf Datenbank zu, bevor diese initialisiert wurde.
+prepare_chatbot()
 
 async def main():
     # Konfiguration laden

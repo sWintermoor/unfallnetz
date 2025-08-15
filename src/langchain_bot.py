@@ -15,6 +15,8 @@ from langchain.chains.retrieval import create_retrieval_chain
 
 load_dotenv()
 
+VECTORSTORE = None
+
 if not os.getenv("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
@@ -50,8 +52,12 @@ def build_vectorstore():
     embeddings = OpenAIEmbeddings()
     return FAISS.from_documents(docs, embeddings)
 
+def prepare_chatbot():
+    global VECTORSTORE
+    VECTORSTORE = build_vectorstore()
+
 def get_qa_chain():
-    vs = build_vectorstore()
+    vs = VECTORSTORE
     llm = ChatOpenAI(model="gpt-4.1")
 
     system_prompt = (
