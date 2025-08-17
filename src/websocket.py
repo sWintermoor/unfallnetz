@@ -1,14 +1,27 @@
 from .langchain_bot import run_prompt_chatbot
+from flask_socketio import emit
+from flask import request
 
 def register_websocket(socketio, collection):
     @socketio.on('connect')
     def handle_connect():
+        cookies = request.cookies
+        username = cookies.get("username") or "TestGast"
+        print(f"cookies username: {username}")
+        emit('SetCookie', {
+            "name": "username",
+            "username": username,    
+        })
+
         send_data(socketio, collection.find())
 
     @socketio.on('ChatbotMessage')
-    def handle_chatbotMessage(message):
+    def handle_chatbotMessage(input):
+        message = input["text"]
+        cookies = input["cookies"]
+        print(f"Erhaltene Cookies: {cookies}")
         response, commands = run_prompt_chatbot(message)
-        socketio.emit('ChatbotResponse', {
+        emit('ChatbotResponse', {
             'answer': response,
             'commands': commands
         })
@@ -30,7 +43,7 @@ def send_data(socketio, data):
     print("sending finished")
 
 def send_event(socketio, eventType, eventDate, eventLat, eventLng, eventDescription, eventLevel):
-    socketio.emit('EventCreated', {
+    emit('EventCreated', {
         "type": "Feature",
         "geometry": {
             "type": "Point",

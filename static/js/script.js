@@ -275,6 +275,10 @@ map.on('mouseup', (e) => {
 const socket = io();
 socket.on('connect', () => console.log('Verbunden mit Server'));
 socket.on('disconnect', () => console.log('Verbindung getrennt'));
+socket.on('SetCookie', data => {
+    const {name, username} = data;
+    document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(username) + "; path=/;";
+})
 socket.on('EventCreated', (data) => {
   // Add to internal data store
   if (!window.geoJsonData) {
@@ -1269,7 +1273,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function sendMessageChatbot(){
     let input = document.getElementById('chatbot-input').value;
     printUserContent(input);
-    socket.emit('ChatbotMessage', input); // Sending Input to Server
+    const allCookies = document.cookie;
+    socket.emit('ChatbotMessage', {
+        text: input,
+        cookies: allCookies
+    }); // Sending Input to Server
     input = '';
 }
 
