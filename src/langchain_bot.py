@@ -12,10 +12,13 @@ from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
+from langchain.chains.history_aware_retriever import create_history_aware_retriever
+from langchain.memory import ConversationBufferMemory
 
 load_dotenv()
 
 VECTORSTORE = None
+MEMORY = None
 
 if not os.getenv("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
@@ -54,11 +57,25 @@ def build_vectorstore():
 
 def prepare_chatbot():
     global VECTORSTORE
+    global MEMORY 
     VECTORSTORE = build_vectorstore()
+    MEMORY = ConversationBufferMemory(return_messages=True)
 
+#TODO: Mit search_query_prompt und answer_prompt beschäfitgen
+#TODO: Parallele Verarbeitung mehrerer Anfragen
 def get_qa_chain():
     vs = VECTORSTORE
     llm = ChatOpenAI(model="gpt-4.1")
+
+    search_query_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+        "Formulate a short, precise search query (keywords) from the question and chat history."
+        "Resolve pronouns. Return only the search query."
+    ),
+    ("human",
+        "Question: {input}\nChatHistory: {chat_history}"
+    )
+])
 
     system_prompt = (
         "Use the given context to answer the question. "
@@ -68,16 +85,20 @@ def get_qa_chain():
         "Keep the answer concise. "
         "Use German language. "
         "Context: {context}"
+        "ChatHistory: {chat_history}"
     )
 
-    prompt = ChatPromptTemplate.from_messages([
+    answer_prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("human", "{input}")
     ])
 
     retriever = vs.as_retriever()
-    question_answer_chain = create_stuff_documents_chain(llm, prompt)
-    chain = create_retrieval_chain(retriever, question_answer_chain)
+
+    history_retriever = create_history_aware_retriever(llm=llm, retriever=retriever, prompt=search_query_prompt)
+
+    question_answer_chain = create_stuff_documents_chain(llm, answer_prompt)
+    chain = create_retrieval_chain(history_retriever, question_answer_chain)
     return chain
 
 def parse_response(input):
@@ -93,12 +114,18 @@ def parse_response(input):
         }
         result = re.sub(pattern, '', answer).strip()
         return result, commands
-    return input, None
+    return answer, None
 
 def run_prompt_chatbot(input_text):
     chain = get_qa_chain()
-    result = chain.invoke({"input": input_text})
+    chat_history = MEMORY.load_memory_variables({})["history"]
+    print(f"chat history: {chat_history}")
+    result = chain.invoke({"input": input_text, "chat_history": chat_history})
     result, commands = parse_response(result)
+
+    print(f"Input: {input_text}")
+
+    MEMORY.save_context({"input": input_text}, {"output": result})
 
     return result, commands
 
