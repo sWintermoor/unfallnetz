@@ -278,6 +278,7 @@ socket.on('disconnect', () => console.log('Verbindung getrennt'));
 socket.on('SetCookie', data => {
     const {name, username} = data;
     document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(username) + "; path=/;";
+    console.log("Gesetzte Cookies:", document.cookie)
 })
 socket.on('EventCreated', (data) => {
   // Add to internal data store

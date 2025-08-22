@@ -1,12 +1,14 @@
-from .langchain_bot import run_prompt_chatbot
 from flask_socketio import emit
 from flask import request
+
+from .langchain_bot import run_prompt_chatbot
+from .cookie_handler import create_cookie
 
 def register_websocket(socketio, collection):
     @socketio.on('connect')
     def handle_connect():
         cookies = request.cookies
-        username = cookies.get("username") or "TestGast"
+        username = cookies.get("username") or create_cookie()
         print(f"cookies username: {username}")
         emit('SetCookie', {
             "name": "username",
@@ -20,7 +22,7 @@ def register_websocket(socketio, collection):
         message = input["text"]
         cookies = input["cookies"]
         print(f"Erhaltene Cookies: {cookies}")
-        response, commands = run_prompt_chatbot(message)
+        response, commands = run_prompt_chatbot(message, cookies)
         emit('ChatbotResponse', {
             'answer': response,
             'commands': commands

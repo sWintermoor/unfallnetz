@@ -18,7 +18,7 @@ from langchain.memory import ConversationBufferMemory
 load_dotenv()
 
 VECTORSTORE = None
-MEMORY = None
+MEMORY = {}
 
 if not os.getenv("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
@@ -59,9 +59,7 @@ def prepare_chatbot():
     global VECTORSTORE
     global MEMORY 
     VECTORSTORE = build_vectorstore()
-    MEMORY = ConversationBufferMemory(return_messages=True)
 
-#TODO: Mit search_query_prompt und answer_prompt beschäfitgen
 #TODO: Parallele Verarbeitung mehrerer Anfragen
 def get_qa_chain():
     vs = VECTORSTORE
@@ -116,16 +114,22 @@ def parse_response(input):
         return result, commands
     return answer, None
 
-def run_prompt_chatbot(input_text):
+def load_chathistory(cookies):
+    print(f"testing for cookies: {MEMORY.get(cookies)}")
+    if MEMORY.get(cookies) == None:
+        MEMORY[cookies] = ConversationBufferMemory(return_messages=True)
+    return MEMORY[cookies].load_memory_variables({})["history"]
+
+def run_prompt_chatbot(input_text, cookies):
     chain = get_qa_chain()
-    chat_history = MEMORY.load_memory_variables({})["history"]
+    chat_history = load_chathistory(cookies)
     print(f"chat history: {chat_history}")
     result = chain.invoke({"input": input_text, "chat_history": chat_history})
     result, commands = parse_response(result)
 
     print(f"Input: {input_text}")
 
-    MEMORY.save_context({"input": input_text}, {"output": result})
+    MEMORY[cookies].save_context({"input": input_text}, {"output": result})
 
     return result, commands
 
