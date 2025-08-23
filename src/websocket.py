@@ -7,22 +7,23 @@ from .cookie_handler import create_cookie
 def register_websocket(socketio, collection):
     @socketio.on('connect')
     def handle_connect():
+        """
         cookies = request.cookies
-        username = cookies.get("username") or create_cookie()
-        print(f"cookies username: {username}")
+        key = cookies.get("key")
+        print(f"cookies key: {key}")
         emit('SetCookie', {
-            "name": "username",
-            "username": username,    
+            "name": "key",
+            "key": key,    
         })
+        """
 
         send_data(socketio, collection.find())
 
     @socketio.on('ChatbotMessage')
-    def handle_chatbotMessage(input):
-        message = input["text"]
-        cookies = input["cookies"]
-        print(f"Erhaltene Cookies: {cookies}")
-        response, commands = run_prompt_chatbot(message, cookies)
+    def handle_chatbotMessage(payload):
+        cookies = request.cookies
+        key = cookies.get('key', 'default')
+        response, commands = run_prompt_chatbot(payload, key)
         emit('ChatbotResponse', {
             'answer': response,
             'commands': commands

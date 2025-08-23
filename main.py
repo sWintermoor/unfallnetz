@@ -24,7 +24,7 @@ app.collection_handler = collection_handler
 register_routes(app)
 register_websocket(socketio, collection_handler)
 
-# Dokumente für Chatbot laden - Muss bearbeitet werden, momentan nur 1 Nutzer möglich + greift auf Datenbank zu, bevor diese initialisiert wurde.
+# Dokumente für Chatbot laden - Muss bearbeitet werden, greift auf Datenbank zu, bevor diese initialisiert wurde.
 prepare_chatbot()
 
 async def main():

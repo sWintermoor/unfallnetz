@@ -1,5 +1,7 @@
 // static/js/script.js
 
+console.log("Stored cookies:", document.cookie);
+
 // 1. Globaler Zustand und Konstanten
 const AppState = {
     themes: [
@@ -275,11 +277,11 @@ map.on('mouseup', (e) => {
 const socket = io();
 socket.on('connect', () => console.log('Verbunden mit Server'));
 socket.on('disconnect', () => console.log('Verbindung getrennt'));
-socket.on('SetCookie', data => {
+/*socket.on('SetCookie', data => {
     const {name, username} = data;
     document.cookie = encodeURIComponent(name) + "=" + encodeURIComponent(username) + "; path=/;";
     console.log("Gesetzte Cookies:", document.cookie)
-})
+})*/
 socket.on('EventCreated', (data) => {
   // Add to internal data store
   if (!window.geoJsonData) {
@@ -1274,11 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function sendMessageChatbot(){
     let input = document.getElementById('chatbot-input').value;
     printUserContent(input);
-    const allCookies = document.cookie;
-    socket.emit('ChatbotMessage', {
-        text: input,
-        cookies: allCookies
-    }); // Sending Input to Server
+    socket.emit('ChatbotMessage', input); // Sending Input to Server
     input = '';
 }
 
