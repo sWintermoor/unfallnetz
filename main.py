@@ -24,9 +24,6 @@ app.collection_handler = collection_handler
 register_routes(app)
 register_websocket(socketio, collection_handler)
 
-# Dokumente für Chatbot laden - Muss bearbeitet werden, greift auf Datenbank zu, bevor diese initialisiert wurde.
-prepare_chatbot()
-
 async def main():
     # Konfiguration laden
     app.config.from_object(Config)
@@ -38,6 +35,9 @@ async def main():
         initialize_db(collection_handler, url, uri)
     except Exception as e:
         print("Warnung: Keine Verbindung zu MongoDB möglich.", e)
+
+    # Dokumente für Chatbot laden - Muss bearbeitet werden, greift auf Datenbank zu, bevor diese initialisiert wurde.
+    prepare_chatbot()
 
     # Hintergrund-Aufgaben starten: SocketIO-Server und Updater
     socketio_task = asyncio.to_thread(
