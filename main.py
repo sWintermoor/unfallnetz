@@ -37,7 +37,10 @@ async def main():
         print("Warnung: Keine Verbindung zu MongoDB möglich.", e)
 
     # Dokumente für Chatbot laden - Muss bearbeitet werden, greift auf Datenbank zu, bevor diese initialisiert wurde.
-    prepare_chatbot()
+    try:
+        prepare_chatbot()
+    except:
+        pass
 
     # Hintergrund-Aufgaben starten: SocketIO-Server und Updater
     socketio_task = asyncio.to_thread(
