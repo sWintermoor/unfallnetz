@@ -7,7 +7,7 @@ from .websocket import send_data
 from .utils import utils_parse_date, utils_sort_by_event_date
 
 async def update_system(url, collection, socketio):
-    await asyncio.sleep(2)
+    await asyncio.sleep(10)
 
     while True:
 
