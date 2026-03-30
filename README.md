@@ -12,3 +12,10 @@ Weitere potenzielle Quellen:
 - [Presseportal der Polizei Hamburg – aktuelle Meldungen](https://www.presseportal.de/blaulicht/pm/6337/5976158)
 - [Presseportal Hauptseite der Polizei Hamburg](http://presseportal.de/blaulicht/nr/6337)
 - [Statistik Nord: Verkehrsunfälle in Hamburg (PDF)](https://www.statistik-nord.de/fileadmin/Dokumente/H_I_1-m2412_HH.pdf?utm_source=chatgpt.com)
+
+## Bilder
+
+![Preview 1](pictures/unfallnetz1.png)
+![Preview 2](pictures/unfallnetz2.png)
+![Preview 3](pictures/unfallnetz3.png)
+![Preview 4](pictures/unfallnetz4.png)

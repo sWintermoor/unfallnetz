@@ -23,8 +23,11 @@ MEMORY = {}
 if not os.getenv("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter your OpenAI API key: ")
 
-client = MongoClient(os.getenv("MONGODB_URI_ENV"), server_api=ServerApi('1'))
-db = client["Unfall"]
+try:
+    client = MongoClient(os.getenv("MONGODB_URI_ENV"), server_api=ServerApi('1'))
+    db = client["Unfall"]
+except:
+    print("fail")
 
 def load_docs():
     data = db["verkehrsmeldungen"].find({})
